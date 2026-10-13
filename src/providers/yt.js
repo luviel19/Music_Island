@@ -7,6 +7,8 @@ Providers.register(makeQueueProvider({
   ],
   caps: { shuffle: false, like: false },
   engine: window.youtubeEngine(),
+  search: (host, q) => host.raw('yt:search', q),
+  related: (host, t) => host.raw('yt:more', { lastId: t.id }),
   async load(host, mode) {
     const r = await host.call('yt:load', { mode });
     return { tracks: r.tracks, more: (queue) => host.call('yt:more', { lastId: queue[queue.length - 1]?.id }) };

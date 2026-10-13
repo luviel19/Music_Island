@@ -135,6 +135,18 @@ module.exports = function createSoundCloud(ctx) {
       if (liked) r.tracks.forEach((t) => { t.liked = true; });
       return r;
     },
+    search: async (q) => {
+      q = String(q).slice(0, 100);
+      for (let attempt = 0; ; attempt++) { // первый ответ после получения ключа бывает без mp3-потоков
+        const j = await api('/search/tracks', { query: { q, limit: 25 } });
+        const tracks = normList(j.collection || []);
+        if (tracks.length || attempt >= 1) return tracks.slice(0, 20);
+      }
+    },
+    related: async ({ id }) => {
+      const j = await api(`/tracks/${encodeURIComponent(id)}/related`, { query: { limit: 30 } });
+      return normList(j.collection || []);
+    },
     url: async ({ tc, ta }) => {
       const j = await api(tc, { query: { track_authorization: ta }, auth: !!getToken() });
       if (!j?.url) throw new Error('Трек недоступен');

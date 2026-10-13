@@ -31,6 +31,12 @@ async function call(name, ...args) {
 // ───────────────────── то, что видит провайдер ─────────────────────
 const host = {
   call,
+  // вызов без реакции на 'auth' (поиск по неактивным площадкам не должен открывать окно входа)
+  async raw(name, ...args) {
+    const r = await bridge.invoke(name, ...args);
+    if (!r.ok) throw new Error(r.error);
+    return r.data;
+  },
   get settings() { return S.settings; },
   async setSetting(patch) { S.settings = await call('settings:set', patch); renderControls(); return S.settings; },
   isPlaying: () => T.playing,
@@ -75,6 +81,7 @@ const host = {
 // ───────────────────── состояние острова ─────────────────────
 function applyState() {
   island.dataset.state = !S.open ? 'compact' : T.authNeeded ? 'auth' : S.sub;
+  if (typeof Search !== 'undefined') Search.sync(island.dataset.state === 'search');
 }
 function setOpen(v) {
   S.open = v;
@@ -108,7 +115,7 @@ document.addEventListener('mouseleave', () => setOver(false));
 // ───────────────────── перетаскивание острова ─────────────────────
 let pd = null, justDragged = false;
 island.addEventListener('pointerdown', (e) => {
-  if (e.button !== 0 || S.settings.lockPosition || e.target.closest('button, .bar, .qitem, .list')) return;
+  if (e.button !== 0 || S.settings.lockPosition || e.target.closest('button, .bar, .qitem, .list, .sbox, .srow')) return;
   pd = { x: e.screenX, y: e.screenY, moved: false };
   island.setPointerCapture(e.pointerId);
 });
@@ -510,6 +517,7 @@ $('#like').onclick = async () => {
 $('#pin').onclick = () => host.setSetting({ alwaysOnTop: !S.settings.alwaysOnTop });
 $('#toQueue').onclick = () => setSub('queue');
 $('#toInfo').onclick = () => setSub('details');
+$('#toSearch').onclick = () => setSub('search');
 // ───────────────────── выпадающий список источников ─────────────────────
 const menu = $('#menu');
 function renderMenu() {
@@ -639,9 +647,9 @@ async function startActive() {
   if (P.id !== id) return; // успели переключить
   if (r === 'auth') host.authRequired();
 }
-async function setSource(id) {
+function switchTo(id) {
   const next = Providers.get(id);
-  if (!next || next === P) return;
+  if (!next || next === P) return false;
   P.stop();
   P = next; S.source = id;
   call('settings:set', { source: id });
@@ -649,8 +657,36 @@ async function setSource(id) {
   T.authNeeded = false; T.playing = false; T.shuffle = false;
   host.setTrack(null, '');
   renderPlay(); renderControls(); renderVol(); applyState();
-  await startActive();
+  return true;
 }
+async function setSource(id) {
+  if (switchTo(id)) await startActive();
+}
+// трек из поиска: переключаемся на нужную площадку (если надо) и играем его
+async function playResult(pid, track, list) {
+  setSub('expanded');
+  switchTo(pid);
+  S.mode = ''; renderControls();
+  T.authNeeded = false;
+  try { await P.open(host, track, list); } catch (e) { if (e.message !== 'auth') flash(e.message); }
+}
+
+// ───────────────────── обновление приложения ─────────────────────
+let autoCloseT;
+function showUpdate(info) {
+  T.update = info;
+  island.classList.toggle('has-update', !!info);
+  if (!info) return;
+  $('#updText').textContent = `Music Island ${info.version} (у вас ${info.current})`;
+  if (T.authNeeded || S.sub !== 'expanded') return;
+  setOpen(true); setSub('update');
+  clearTimeout(autoCloseT);
+  autoCloseT = setTimeout(() => { if (!S.over && !S.busy) setOpen(false); }, 12000); // само закроется, если не наводили мышь
+}
+$('#updGo').onclick = () => { call('update:open'); setSub('expanded'); };
+$('#updLater').onclick = () => setSub('expanded');
+$('#updChip').onclick = () => setSub('update');
+bridge.on('update', showUpdate);
 
 // ───────────────────── команды из трея ─────────────────────
 bridge.on('settings', (s) => { S.settings = s; renderControls(); });
@@ -671,5 +707,6 @@ bridge.on('cmd', (c) => {
   P = Providers.get(S.source) || Providers.list[0];
   S.mode = P.modes.some((m) => m.id === S.settings.mode) ? S.settings.mode : P.modes[0]?.id ?? '';
   renderControls(); renderTrack(); renderPlay(); renderVol(); applyState();
+  call('update:get').then((u) => u && showUpdate(u)).catch(() => {});
   await startActive();
 })();

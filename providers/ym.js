@@ -138,6 +138,15 @@ module.exports = function createYandex(ctx) {
       const byId = new Map(r.map((t) => [String(t.id), norm(t)]));
       return ids.map((id) => byId.get(String(id))).filter(Boolean);
     },
+    search: async (q) => {
+      q = String(q).slice(0, 100);
+      const r = await api('/search', { query: { text: q, type: 'track', page: 0, nocorrect: 'false' } });
+      return (r.tracks?.results || []).map(norm).filter((t) => t.available).slice(0, 20);
+    },
+    similar: async (id) => {
+      const r = await api(`/tracks/${encodeURIComponent(id)}/similar`);
+      return (r.similarTracks || []).map(norm).filter((t) => t.available);
+    },
     url: (id) => directUrl(id),
     like: async ({ id, like }) => {
       await api(`/users/${await getUid()}/likes/tracks/${like ? 'add-multiple' : 'remove'}`, {

@@ -17,6 +17,8 @@ Providers.register(makeQueueProvider({
       more: next ? async () => { const m = await host.call('sc:more', { next, liked: r.liked }); next = m.next; return m.tracks; } : null,
     };
   },
+  search: (host, q) => host.raw('sc:search', q),
+  related: (host, t) => host.raw('sc:related', { id: t.id }),
   resolveUrl: (host, t) => host.call('sc:url', { tc: t.tc, ta: t.ta }),
   like: (host, t, on) => host.call('sc:like', { id: t.id, like: on }),
   trackUrl: (t) => t.url || null,

@@ -61,6 +61,7 @@ const ctx = {
   enc, dec, clipboard, shell, session, BrowserWindow,
 };
 const providers = require('./providers')(ctx);
+const updater = require('./updater')((info) => { win?.webContents.send('update', info); tray?.setContextMenu(buildMenu()); });
 const activeProvider = () => providers.find((p) => p.id === S.source) || providers[0];
 
 function handle(name, fn) {
@@ -80,6 +81,8 @@ handle('settings:set', (patch) => {
   applySettings();
   return publicSettings();
 });
+handle('update:get', () => updater.latest);
+handle('update:open', () => { if (updater.latest) shell.openExternal(updater.latest.url); });
 handle('open:external', (url) => {
   const u = new URL(url);
   if (u.protocol === 'https:' && providers.some((p) => (p.hosts || []).includes(u.hostname))) shell.openExternal(url);
@@ -88,6 +91,11 @@ handle('open:external', (url) => {
 // окно: прозрачные области пропускают клики, остров перетаскивается вручную
 let win, tray, drag = null;
 ipcMain.on('win:ignore', (_e, ignore) => win?.setIgnoreMouseEvents(ignore, { forward: true }));
+ipcMain.on('win:focusable', (_e, on) => {
+  if (!win) return;
+  win.setFocusable(!!on);
+  if (on) { win.focus(); win.webContents.focus(); }
+});
 ipcMain.on('win:drag-start', () => {
   const c = screen.getCursorScreenPoint();
   const b = win.getBounds();
@@ -147,6 +155,7 @@ function buildMenu() {
   const send = (cmd) => win.webContents.send('cmd', cmd);
   const toggle = (key) => () => { S[key] = !S[key]; applySettings(); };
   return Menu.buildFromTemplate([
+    ...(updater.latest ? [{ label: `Доступна версия ${updater.latest.version}: скачать`, click: () => shell.openExternal(updater.latest.url) }, { type: 'separator' }] : []),
     { label: 'Показать остров', click: () => { win.showInactive(); win.moveTop(); } },
     { type: 'separator' },
     ...providers.map((p) => ({ label: `Источник: ${p.name}`, type: 'radio', checked: S.source === p.id, click: () => send(`source:${p.id}`) })),
@@ -172,6 +181,9 @@ app.whenReady().then(() => {
   tray.setToolTip('Music Island');
   tray.setContextMenu(buildMenu());
   tray.on('click', () => { win.showInactive(); win.moveTop(); });
+
+  setTimeout(() => updater.check(), 8000);
+  setInterval(() => updater.check(), 6 * 3600 * 1000);
 
   const media = { MediaPlayPause: 'toggle', MediaNextTrack: 'next', MediaPreviousTrack: 'prev' };
   for (const [key, cmd] of Object.entries(media)) {

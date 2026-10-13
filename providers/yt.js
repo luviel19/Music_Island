@@ -81,6 +81,7 @@ module.exports = function createYouTube(ctx) {
     dispose: () => server?.close(),
     handlers: {
       port: () => ensureServer(),
+      search: async (q) => (await search(String(q).slice(0, 100))).slice(0, 20),
       logout: () => true,
       load: async ({ mode }) => {
         if (mode === 'trend') {

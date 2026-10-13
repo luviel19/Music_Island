@@ -8,6 +8,8 @@
 //   setMode(mode, autoplay)
 //   toggle() next() prev() seek(ms) setVolume(0..1) like(bool) toggleShuffle()
 //   getQueue()  playFromQueue(i)  trackUrl(track)
+//   search?(host, query) -> tracks     участвует в поиске по площадкам (host.raw — вызов без окна входа)
+//   open?(host, track, list)            играть трек из поиска (list — остальные результаты площадки)
 //   authView() -> { title, text, primary, secondary?, link?: {label,url}, tall? }
 //   async authAction('primary'|'secondary') -> true (вошли) | false (перерисовать форму)
 //

@@ -30,6 +30,7 @@ Providers.register((() => {
   }
 
   async function loadMode(mode, autoplay = false) {
+    if (mode === 'search') mode = 'wave';
     const seq = ++Q.loadSeq;
     Q.mode = mode; Q.status = 'Загрузка…';
     Q.queue = []; Q.idx = -1; Q.loadedId = null;
@@ -85,6 +86,12 @@ Providers.register((() => {
         const have = new Set(Q.queue.map((t) => t.id));
         Q.queue.push(...r.tracks.filter((t) => t.available && !have.has(t.id)));
         if (Q.idx > 30) { Q.queue.splice(0, Q.idx - 10); Q.idx = 10; }
+      } else if (Q.mode === 'search' && Q.queue.length - Q.idx <= 3) {
+        Q.loadingMore = true;
+        const add = await host.call('ym:similar', Q.queue[Q.queue.length - 1].id);
+        if (seq !== Q.loadSeq) return;
+        const have = new Set(Q.queue.map((t) => t.id));
+        Q.queue.push(...add.filter((t) => !have.has(t.id)));
       } else if (Q.mode === 'fav' && Q.idx >= Q.queue.length - 5 && Q.favLoaded < Q.favIds.length) {
         Q.loadingMore = true;
         await loadMoreFav(seq);
@@ -158,6 +165,19 @@ Providers.register((() => {
       await loadMode(mode, false);
       return 'ok';
     },
+    async open(h, track, list) {
+      host = h; active = true;
+      Q.loadSeq++; Q.playSeq++;
+      host.setVolume(audio.volume); host.setShuffle(false);
+      Q.mode = 'search'; Q.status = ''; Q.loadedId = null; Q.loadingMore = false;
+      Q.queue = [track, ...list.filter((t) => t.id !== track.id)];
+      Q.idx = 0;
+      audio.pause(); audio.removeAttribute('src');
+      host.setPlaying(false); publish();
+      refreshLikes();
+      playIndex(0, true);
+    },
+    search: (h, q) => h.raw('ym:search', q),
     stop() {
       active = false; Q.loadSeq++; Q.playSeq++;
       audio.pause(); audio.removeAttribute('src');

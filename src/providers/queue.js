@@ -1,7 +1,7 @@
 // Общая логика провайдеров с очередью треков (SoundCloud, YouTube, Звук): очередь, переходы,
 // догрузка, лайки, ошибки. Конкретный сервис задаёт только cfg, воспроизведение — engine.
 //
-// cfg: { id, name, hint, icon, modes, caps,
+// cfg: { id, name, hint, icon, modes, caps, search?(host, q) -> tracks, related?(host, track) -> tracks,
 //        needsAuth(mode) -> bool, isAuthed(host) -> Promise<bool>,
 //        load(host, mode) -> Promise<{ tracks, more?: (queue) => Promise<tracks> }>,
 //        like?(host, track, on), trackUrl(track), authView(), authAction(kind, host),
@@ -170,6 +170,19 @@ window.makeQueueProvider = (cfg) => {
       await loadMode(mode, false);
       return 'ok';
     },
+    // запуск конкретного трека из поиска: он первый, дальше — остальные результаты и «похожие»
+    async open(h, track, list) {
+      host = h; active = true;
+      Q.loadSeq++; Q.playSeq++;
+      Q.mode = null; Q.status = ''; Q.loadedId = null; Q.loadingMore = false;
+      Q.more = cfg.related ? (queue) => cfg.related(host, queue[queue.length - 1]) : null;
+      Q.queue = [track, ...list.filter((t) => t.id !== track.id && t.available !== false)];
+      Q.idx = 0;
+      engine.stop(); engine.init(host, callbacks);
+      host.setPlaying(false); publish();
+      play(0);
+    },
+    search: cfg.search,
     stop() { active = false; Q.loadSeq++; Q.playSeq++; engine.stop(); Q.queue = []; Q.idx = -1; },
 
     async setMode(mode, autoplay) {
