@@ -1,0 +1,41 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<style>html,body{margin:0;background:#000;overflow:hidden}</style>
+<div id="p"></div>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+// Мост между плеером YouTube и интерфейсом острова (postMessage в родителя).
+let player, ready = false;
+const pending = [];
+const post = (m) => parent.postMessage({ yt: m }, '*');
+
+window.onYouTubeIframeAPIReady = () => {
+  player = new YT.Player('p', {
+    width: '200', height: '200',
+    playerVars: { playsinline: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, origin: location.origin },
+    events: {
+      onReady() { ready = true; post({ t: 'ready' }); pending.splice(0).forEach(cmd); },
+      onStateChange(e) { post({ t: 'state', s: e.data }); },
+      onError(e) { post({ t: 'error', c: e.data }); },
+    },
+  });
+};
+
+function cmd(m) {
+  if (!ready) { pending.push(m); return; }
+  switch (m.c) {
+    case 'load': player.loadVideoById(m.id); break;
+    case 'play': player.playVideo(); break;
+    case 'pause': player.pauseVideo(); break;
+    case 'stop': player.stopVideo(); break;
+    case 'seek': player.seekTo(m.s, true); break;
+    case 'vol': player.setVolume(m.v); break;
+  }
+}
+addEventListener('message', (e) => { if (e.data && e.data.c) cmd(e.data); });
+
+setInterval(() => {
+  if (ready && player.getCurrentTime) post({ t: 'time', p: player.getCurrentTime(), d: player.getDuration(), s: player.getPlayerState() });
+}, 500);
+</script>

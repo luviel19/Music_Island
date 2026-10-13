@@ -1,0 +1,61 @@
+{
+  "name": "music-island",
+  "version": "0.1.0",
+  "description": "Dynamic Island для музыки: Яндекс Музыка, SoundCloud, YouTube и системный плеер",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis",
+    "pack": "electron-builder --win --dir"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3"
+  },
+  "author": "luviel19",
+  "build": {
+    "appId": "com.luviel.musicisland",
+    "productName": "Music Island",
+    "artifactName": "Music-Island-Setup-${version}.${ext}",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "providers/**/*",
+      "src/**/*",
+      "assets/icon.png",
+      "assets/icon.ico",
+      "assets/tray.png",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "providers/media.ps1"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Music Island",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "language": "1049"
+    }
+  }
+}

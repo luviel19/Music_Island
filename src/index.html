@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src https: data:; media-src https: blob:; frame-src http://localhost:*; style-src 'self' 'unsafe-inline'">
+<title>Island</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M7.5 5h-1A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19h1A1.5 1.5 0 0 0 9 17.5v-11A1.5 1.5 0 0 0 7.5 5zm10 0h-1A1.5 1.5 0 0 0 15 6.5v11a1.5 1.5 0 0 0 1.5 1.5h1a1.5 1.5 0 0 0 1.5-1.5v-11A1.5 1.5 0 0 0 17.5 5z"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path fill="currentColor" d="M5 6.2v11.6a1 1 0 0 0 1.55.83l8.2-5.8a1 1 0 0 0 0-1.66l-8.2-5.8A1 1 0 0 0 5 6.2zM17 5.5v13a1 1 0 0 0 2 0v-13a1 1 0 0 0-2 0z"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.5 8 3.4 4.8 6.8 4.8c2 0 3.5 1 5.2 3 1.7-2 3.2-3 5.2-3 3.4 0 5.3 3.2 4.1 6.5-1.8 4.6-9.3 9.2-9.3 9.2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-wave" viewBox="0 0 24 24"><path d="M2 12c1.5-6 3-6 4.5 0s3 6 4.5 0 3-6 4.5 0 3 6 4.5 0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></g></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 4h6l-1 6 3 3v1.5H7V13l3-3-1-6zM12 14.5V21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M3 7h3.5c2 0 3.5 1 4.5 3l2 4c1 2 2.5 3 4.5 3H21M18 14l3 3-3 3M3 17h3.5c1.3 0 2.4-.5 3.2-1.4M13.3 8.4C14.1 7.5 15.2 7 16.5 7H21M18 4l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-vol" viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z" fill="currentColor"/><path d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-ym" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#ffdb4d"/><text x="12" y="17.2" text-anchor="middle" font-size="14" font-weight="800" fill="#000" font-family="Segoe UI, Arial">Я</text></symbol>
+    <symbol id="i-sp" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#1ed760"/><path d="M6.5 9.3c3.6-1.1 7.6-.8 11 1M7.2 12.6c3-.9 6.2-.6 9 .9M8 15.7c2.4-.7 4.8-.4 6.9.7" fill="none" stroke="#000" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-media" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#7d7aff"/><path d="M10.2 7.3v7.1a2.4 2.4 0 1 0 1.5 2.2V10.2l4.3-1V6.4l-5.8.9z" fill="#fff"/></symbol>
+    <symbol id="i-vk" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#0077ff"/><text x="12" y="15.6" text-anchor="middle" font-size="8.6" font-weight="800" fill="#fff" font-family="Segoe UI, Arial">VK</text></symbol>
+    <symbol id="i-zvuk" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#7a35ff"/><path d="M6 14.5v-5M9 17V7M12 15.5v-7M15 18V6M18 14v-4" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-sc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#ff5500"/><path d="M5.5 14.5v-3M7.5 15v-5M9.5 15V9.5M11.5 15V8.5M13.2 15h3.4a2.2 2.2 0 0 0 .2-4.4 3.6 3.6 0 0 0-3.6-2.2z" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-yt" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#ff1f1f"/><path d="M10 8.6v6.8l5.6-3.4z" fill="#fff"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-trend" viewBox="0 0 24 24"><path d="M12 3.5c.6 3 3.8 4.3 3.8 8a3.8 3.8 0 0 1-7.6 0c0-1.3.5-2.3 1.2-3-.1 1.2.6 1.9 1.3 2 .1-3 .6-5.2 1.3-7zM6.5 14.8A5.6 5.6 0 0 0 12 20.5a5.6 5.6 0 0 0 5.5-5.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.7l1-1" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div id="stage">
+  <div id="island" data-state="compact">
+
+    <div class="glow"></div>
+    <canvas class="bgeq" id="bgeq" width="460" height="198"></canvas>
+
+    <!-- компактный вид -->
+    <section class="layer l-compact">
+      <img class="cover-s" alt="">
+      <span class="c-title" id="cTitle">Моя волна</span>
+      <canvas class="eq" id="eq"></canvas>
+    </section>
+
+    <!-- основной вид -->
+    <section class="layer l-expanded">
+      <div class="top">
+        <img class="cover-m" id="cover" alt="">
+        <div class="meta">
+          <div class="title" id="title">—</div>
+          <div class="artist" id="artist">&nbsp;</div>
+        </div>
+        <button class="ib like" id="like" data-tip="Нравится"><svg><use href="#i-heart"/></svg></button>
+      </div>
+      <div class="progress">
+        <span id="tCur">0:00</span>
+        <div class="bar wavebar" id="bar"><canvas id="wave"></canvas></div>
+        <span id="tDur">0:00</span>
+      </div>
+      <div class="volrow" id="volrow">
+        <button class="ib" id="mute"><svg><use id="volIcon" href="#i-vol"/></svg></button>
+        <div class="bar" id="vbar"><div class="fill" id="vfill"></div></div>
+        <span id="vPct">70</span>
+      </div>
+      <div class="controls">
+        <div class="left">
+        <button class="ib src" id="src" data-tip="Источник"><svg><use id="srcIcon" href="#i-ym"/></svg></button>
+        <div class="seg" id="seg"></div>
+        </div>
+        <div class="transport">
+          <button class="ib" id="prev" data-tip="Назад"><svg class="flip"><use href="#i-next"/></svg></button>
+          <button class="play" id="play"><svg><use id="playIcon" href="#i-play"/></svg></button>
+          <button class="ib" id="next" data-tip="Дальше"><svg><use href="#i-next"/></svg></button>
+        </div>
+        <div class="tools">
+          <button class="ib" id="vol" data-tip="Громкость"><svg><use href="#i-vol"/></svg></button>
+          <button class="ib" id="shuffle" data-tip="Перемешать избранное"><svg><use href="#i-shuffle"/></svg></button>
+          <button class="ib" id="toQueue" data-tip="Очередь"><svg><use href="#i-list"/></svg></button>
+          <button class="ib" id="toInfo" data-tip="Подробности"><svg><use href="#i-info"/></svg></button>
+          <button class="ib" id="pin" data-tip="Поверх всех окон"><svg><use href="#i-pin"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- очередь -->
+    <section class="layer l-queue">
+      <header><button class="ib back" data-back><svg><use href="#i-back"/></svg></button><h3 id="qTitle">Далее</h3></header>
+      <div class="list" id="list"></div>
+    </section>
+
+    <!-- подробности -->
+    <section class="layer l-details">
+      <header><button class="ib back" data-back><svg><use href="#i-back"/></svg></button><h3>О треке</h3></header>
+      <div class="d-body">
+        <img class="cover-l" id="dCover" alt="">
+        <div class="d-info">
+          <div class="title" id="dTitle"></div>
+          <div class="artist" id="dArtist"></div>
+          <dl id="dList"></dl>
+          <div class="d-actions">
+            <button class="chip" id="dOpen"><svg><use href="#i-ext"/></svg>Открыть в Яндекс Музыке</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- вход -->
+    <section class="layer l-auth">
+      <div class="auth">
+        <h3 id="authTitle">Яндекс Музыка</h3>
+        <p id="authText">Войдите, чтобы слушать «Мою волну» и избранное</p>
+        <button class="chip big" id="login">Войти через Яндекс</button>
+        <button class="link" id="devlink">Открыть developer.spotify.com</button>
+        <button class="link" id="paste">Вставить токен из буфера обмена</button>
+        <div class="err" id="authErr"></div>
+      </div>
+    </section>
+
+  </div>
+  <div id="tip"></div>
+  <div id="menu" role="listbox"></div>
+</div>
+
+<script src="providers/registry.js"></script>
+<script src="providers/queue.js"></script>
+<script src="providers/ym.js"></script>
+<script src="providers/sc.js"></script>
+<script src="providers/yt.js"></script>
+<!-- <script src="providers/zv.js"></script> -->
+<!-- <script src="providers/sp.js"></script> -->
+<script src="providers/media.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
