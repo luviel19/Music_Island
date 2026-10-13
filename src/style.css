@@ -29,7 +29,7 @@ svg { width: 20px; height: 20px; display: block; }
 #island[data-state="expanded"] { --w: 460px; --h: 198px; --r: 36px; }
 #island[data-state="queue"]    { --w: 460px; --h: 336px; --r: 32px; }
 #island[data-state="details"]  { --w: 460px; --h: 262px; --r: 32px; }
-#island[data-state="auth"]     { --w: 380px; --h: 188px; --r: 34px; }
+#island[data-state="auth"]     { --w: 380px; --h: 226px; --r: 34px; }
 #island[data-state="search"]   { --w: 460px; --h: 372px; --r: 32px; }
 #island[data-state="update"]   { --w: 380px; --h: 170px; --r: 32px; }
 
@@ -206,7 +206,7 @@ dd { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
 .src { width: 30px; height: 30px; padding: 0; }
 .src svg { width: 26px; height: 26px; }
 .src:hover { background: none; transform: scale(1.12); }
-#island[data-state="auth"][data-tall] { --h: 268px; }
+#island[data-state="auth"][data-tall] { --h: 306px; }
 .l-auth { height: 100%; }
 #devlink { display: none; }
 .auth p { font-size: 12.5px; line-height: 1.4; }
@@ -331,3 +331,10 @@ dd { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
 .sp.sel { background: #fff; color: #000; box-shadow: 0 0 0 1px rgba(255, 255, 255, .6); }
 .sp.sel:hover { background: #fff; }
 .sp { flex: none; }
+
+.auth-alt { display: flex; align-items: center; gap: 10px; margin-top: 8px; color: var(--dim); font-size: 12px; }
+#altSrc { display: flex; gap: 6px; }
+.alt { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .07); transition: transform .18s var(--ease), background .15s; }
+.alt svg { width: 24px; height: 24px; }
+.alt:hover { transform: scale(1.14); background: rgba(255, 255, 255, .18); }
+.alt:active { transform: scale(.94); }

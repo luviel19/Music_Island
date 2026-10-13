@@ -23,6 +23,8 @@ if (!process.argv.some((a) => a.startsWith('--user-data-dir'))) {
 
 if (!app.requestSingleInstanceLock()) app.quit();
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+// Остров маленький, а процесс GPU с аппаратным ускорением раздувался до 200–300 МБ ОЗУ: рисуем на CPU
+app.disableHardwareAcceleration();
 
 // ───────────────────────── настройки ─────────────────────────
 const S = {
@@ -181,6 +183,10 @@ app.whenReady().then(() => {
   tray.setToolTip('Music Island');
   tray.setContextMenu(buildMenu());
   tray.on('click', () => { win.showInactive(); win.moveTop(); });
+
+  // раз в 15 минут чистим кэш Chromium (обложки, ответы сервисов, код): память не копится часами
+  const trim = () => { session.defaultSession.clearCache().catch(() => {}); session.defaultSession.clearCodeCaches({}).catch(() => {}); };
+  setInterval(trim, Number(process.env.MI_TRIM_MS) || 15 * 60 * 1000);
 
   setTimeout(() => updater.check(), 8000);
   setInterval(() => updater.check(), 6 * 3600 * 1000);

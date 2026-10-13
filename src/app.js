@@ -414,13 +414,22 @@ function drawBg(now) {
       } else {
         g.fillStyle = 'rgba(255,255,255,0.028)';
       }
-      g.beginPath(); g.roundRect(x, y, BG_W, BG_H, 1.4); g.fill();
+      g.fillRect(x, y, BG_W, BG_H);
     }
   }
 }
 
+// на паузе перерисовываем только то, что изменилось (иначе процессор зря крутит анимацию)
+let lastSig = '';
+const settling = (st) => (st === 'compact' ? eqV.some((v) => v > 0.02) : bgLv.some((v, i) => v > 0.02 || bgPeak[i] > 0.02));
 setInterval(() => {
   const st = island.dataset.state, now = performance.now();
+  if (st !== 'compact' && st !== 'expanded') return;
+  if (!T.playing && !settling(st)) {
+    const sig = `${st}|${T.track?.id}|${Math.round(T.pos)}|${hoverX}|${ACC}|${T.wave?.length}|${T.wave?.[7]}`;
+    if (sig === lastSig) return;
+    lastSig = sig;
+  } else lastSig = '';
   if (st === 'compact') drawEq(now);
   else if (st === 'expanded') { drawBg(now); drawWave(now); }
 }, 33);
@@ -627,6 +636,15 @@ function renderAuth() {
   $('#devlink').onclick = () => v.link && call('open:external', v.link.url);
   island.toggleAttribute('data-tall', !!v.tall);
   $('#authErr').textContent = '';
+  // без входа в текущую площадку можно сразу выбрать другую
+  const alt = $('#altSrc'); alt.replaceChildren();
+  for (const p of Providers.list.filter((x) => x !== P)) {
+    const b = document.createElement('button');
+    b.className = 'alt'; b.dataset.tip = p.name;
+    b.innerHTML = `<svg><use href="#${p.icon}"/></svg>`;
+    b.onclick = () => setSource(p.id);
+    alt.append(b);
+  }
 }
 async function authAction(kind) {
   S.busy = true;
