@@ -66,7 +66,7 @@ const ctx = {
 const providers = require('./providers')(ctx);
 const updater = require('./updater')((info) => { win?.webContents.send('update', info); tray?.setContextMenu(buildMenu()); });
 // прокси только для SoundCloud и YouTube: остальные площадки ходят напрямую
-const SC_HOSTS = String.raw`(^|\.)(soundcloud\.com|sndcdn\.com|soundcloud\.cloud|youtube\.com|youtu\.be|youtube-nocookie\.com|googlevideo\.com|ytimg\.com|ggpht\.com|gstatic\.com|googleapis\.com|google\.com)$`;
+const SC_HOSTS = String.raw`(^|\.)(soundcloud\.com|sndcdn\.com|soundcloud\.cloud|youtube\.com|youtu\.be|youtube-nocookie\.com|googlevideo\.com|ytimg\.com|ggpht\.com|gstatic\.com|googleapis\.com|google\.com|recaptcha\.net|facebook\.com|fbcdn\.net|apple\.com|datadome\.co|captcha-delivery\.com|hcaptcha\.com|cloudflare\.com)$`;
 function proxyRule(v) {
   const m = /^(?:(socks5|socks4|socks|http|https):\/\/)?([^\s/:]+:\d+)\/?$/i.exec(String(v || '').trim());
   if (!m) return null;
@@ -129,8 +129,11 @@ ${e.message}`);
     ? { mode: 'pac_script', pacScript: 'data:application/x-ns-proxy-autoconfig;base64,' + Buffer.from(
       `function FindProxyForURL(u,h){return /${SC_HOSTS}/.test(h)?"${rule}":"DIRECT";}`).toString('base64') }
     : { mode: 'system' };
-  await session.defaultSession.setProxy(cfg);
-  await session.defaultSession.closeAllConnections();
+  // окно входа SoundCloud живёт в своём разделе сессии, поэтому прокси ставим и туда
+  for (const ses of [session.defaultSession, session.fromPartition('persist:soundcloud')]) {
+    await ses.setProxy(cfg);
+    await ses.closeAllConnections();
+  }
 }
 const activeProvider = () => providers.find((p) => p.id === S.source) || providers[0];
 
