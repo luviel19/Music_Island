@@ -1,6 +1,6 @@
 {
   "name": "music-island",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Dynamic Island для музыки: Яндекс Музыка, SoundCloud, YouTube и системный плеер",
   "main": "main.js",
   "scripts": {

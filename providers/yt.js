@@ -25,7 +25,7 @@ module.exports = function createYouTube(ctx) {
   }
 
   async function post(endpoint, body) {
-    const r = await fetch(`https://www.youtube.com/youtubei/v1/${endpoint}?prettyPrint=false`, {
+    const r = await ctx.fetch(`https://www.youtube.com/youtubei/v1/${endpoint}?prettyPrint=false`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'User-Agent': UA, Origin: 'https://www.youtube.com' },
       body: JSON.stringify({ context: CTX, ...body }),

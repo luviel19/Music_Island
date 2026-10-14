@@ -65,8 +65,8 @@ const ctx = {
 };
 const providers = require('./providers')(ctx);
 const updater = require('./updater')((info) => { win?.webContents.send('update', info); tray?.setContextMenu(buildMenu()); });
-// прокси только для SoundCloud (в РФ он закрыт): остальные площадки ходят напрямую
-const SC_HOSTS = String.raw`(^|\.)(soundcloud\.com|sndcdn\.com|soundcloud\.cloud)$`;
+// прокси только для SoundCloud и YouTube: остальные площадки ходят напрямую
+const SC_HOSTS = String.raw`(^|\.)(soundcloud\.com|sndcdn\.com|soundcloud\.cloud|youtube\.com|youtu\.be|youtube-nocookie\.com|googlevideo\.com|ytimg\.com|ggpht\.com|gstatic\.com|googleapis\.com|google\.com)$`;
 function proxyRule(v) {
   const m = /^(?:(socks5|socks4|socks|http|https):\/\/)?([^\s/:]+:\d+)\/?$/i.exec(String(v || '').trim());
   if (!m) return null;
@@ -102,6 +102,15 @@ async function startFromSub(url) {
     try { const addr = await tunnel.start(l, 6000); S.proxyLast = enc(l); saveSettings(); return addr; } catch (e) { err = e; }
   }
   throw err || new Error('Нет доступных серверов');
+}
+// ссылка хранится в настройках зашифрованной, в меню показываем только сервер (без паролей и ключей)
+function describeTarget(v) {
+  try { const u = new URL(String(v).trim().replace(/^hy2:/i, 'hysteria2:')); return isSub(v) ? `подписка ${u.hostname}` : `${u.protocol.replace(':', '')} ${u.host}`; } catch { return String(v).split('@').pop().slice(0, 40); }
+}
+function setProxyMode(m) {
+  S.proxyMode = m; saveSettings();
+  tray?.setContextMenu(buildMenu());
+  return applyProxy().finally(() => tray?.setContextMenu(buildMenu()));
 }
 async function applyProxy() {
   const mode = proxyMode();
@@ -235,15 +244,16 @@ function buildMenu() {
     { label: 'Раскрывать при наведении', type: 'checkbox', checked: S.hoverExpand, click: toggle('hoverExpand') },
     { label: 'Закрепить положение', type: 'checkbox', checked: S.lockPosition, click: toggle('lockPosition') },
     { label: 'Запускать с Windows', type: 'checkbox', checked: S.autoStart, click: toggle('autoStart') },
-    { label: `Прокси SoundCloud: ${{ off: 'выключен', builtin: 'наш', custom: 'свой' }[proxyMode()]}`, submenu: [
-      ...(hasBuiltin() ? [{ label: 'Использовать наш прокси', type: 'radio', checked: proxyMode() === 'builtin', click: () => { S.proxyMode = 'builtin'; saveSettings(); applyProxy().finally(() => tray?.setContextMenu(buildMenu())); } }] : []),
-      { label: 'Вставить свой VPN или прокси (из буфера)', type: 'radio', checked: proxyMode() === 'custom', click: async () => {
+    { label: `VPN/прокси: ${proxyMode() === 'off' ? 'выключен' : proxyMode() === 'builtin' ? 'наш' : 'включён'}`, submenu: [
+      ...(hasBuiltin() ? [{ label: 'Использовать наш прокси', type: 'radio', checked: proxyMode() === 'builtin', click: () => setProxyMode('builtin') }] : []),
+      { label: customTarget() ? `Включить: ${describeTarget(customTarget())}` : 'Включить (сначала вставьте ссылку)', type: 'checkbox', checked: proxyMode() === 'custom', enabled: !!customTarget(), click: () => setProxyMode(proxyMode() === 'custom' ? 'off' : 'custom') },
+      { label: 'Вставить новый VPN или прокси (из буфера)', click: async () => {
         const v = (await ctx.readClip()).trim();
-        if (!proxyRule(v) && !tunnel.isHy(v) && !isSub(v)) { dialog.showErrorBox('Music Island', 'В буфере обмена нет адреса прокси.\nПодходит: ссылка на подписку VPN (https://…), hysteria2://…, socks5://host:port или 127.0.0.1:1080'); tray?.setContextMenu(buildMenu()); return; }
-        S.proxyCustom = enc(v); S.proxy = ''; S.proxyMode = 'custom'; saveSettings();
-        applyProxy().finally(() => tray?.setContextMenu(buildMenu()));
+        if (!proxyRule(v) && !tunnel.isHy(v) && !isSub(v)) { dialog.showErrorBox('Music Island', 'В буфере обмена нет адреса прокси.\nПодходит: ссылка на подписку VPN (https://…), hysteria2://…, socks5://host:port или 127.0.0.1:1080'); return; }
+        S.proxyCustom = enc(v); S.proxy = ''; S.proxyLast = null;
+        setProxyMode('custom');
       } },
-      { label: 'Выключить', type: 'radio', checked: proxyMode() === 'off', click: () => { S.proxyMode = 'off'; saveSettings(); applyProxy().finally(() => tray?.setContextMenu(buildMenu())); } },
+      { label: 'Забыть сохранённую ссылку', enabled: !!customTarget(), click: () => { S.proxyCustom = null; S.proxy = ''; S.proxyLast = null; setProxyMode(proxyMode() === 'builtin' ? 'builtin' : 'off'); } },
     ] },
     { label: 'Вернуть в центр экрана', click: () => { const p = defaultPosition(); win.setPosition(p.x, p.y); S.x = p.x; S.y = p.y; saveSettings(); } },
     { type: 'separator' },
