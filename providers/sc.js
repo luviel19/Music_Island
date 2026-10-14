@@ -10,7 +10,8 @@ module.exports = function createSoundCloud(ctx) {
 
   async function getCid(force) {
     if (cid && !force) return cid;
-    const home = await (await ctx.fetch('https://soundcloud.com/', { headers: { 'User-Agent': UA } })).text();
+    const hr = await ctx.fetch('https://soundcloud.com/', { headers: { 'User-Agent': UA } });
+    const home = await hr.text();
     const urls = [...home.matchAll(/<script[^>]+src="(https:\/\/a-v2\.sndcdn\.com\/assets\/[^"]+\.js)"/g)].map((m) => m[1]).reverse();
     for (const u of urls) {
       const js = await (await ctx.fetch(u, { headers: { 'User-Agent': UA } })).text();
@@ -20,7 +21,7 @@ module.exports = function createSoundCloud(ctx) {
         return cid;
       }
     }
-    throw new Error('Не удалось получить ключ SoundCloud');
+    throw new Error(urls.length ? 'Не удалось получить ключ SoundCloud' : `SoundCloud ответил странно (HTTP ${hr.status}): прокси его блокирует или подменяет страницу`);
   }
 
   async function api(pathOrUrl, { query, auth, method = 'GET' } = {}) {

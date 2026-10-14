@@ -12,7 +12,7 @@
 ![Platform](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=for-the-badge&logo=windows11&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron-44-47848F?style=for-the-badge&logo=electron&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-ff4d94?style=for-the-badge)
-![Version](https://img.shields.io/badge/version-0.2.3-ffb347?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.2.4-ffb347?style=for-the-badge)
 
 <br>
 
@@ -91,7 +91,7 @@ npm run dist
 ## 🔑 Вход
 
 - **Яндекс Музыка.** Остров сам подскажет, как получить токен, и покажет кнопку вставки. Токен хранится только на вашем ПК, в зашифрованном виде.
-- **SoundCloud.** Музыку можно слушать без входа. Для лайков вставьте значение cookie `oauth_token`. Если сервис недоступен в вашей стране, скопируйте адрес прокси (`127.0.0.1:1080` или `socks5://host:port`) и выберите в трее **«Прокси SoundCloud» → «Взять из буфера обмена»**. Через прокси идёт только SoundCloud, остальные площадки работают напрямую.
+- **SoundCloud.** Музыку можно слушать без входа. Для лайков вставьте значение cookie `oauth_token`. Если сервис недоступен в вашей стране, откройте в трее **«Прокси SoundCloud» → «Вставить свой VPN или прокси»**. Подойдёт ссылка на подписку VPN (остров сам перебирает серверы hysteria2 из подписки и берёт первый рабочий), ссылка `hysteria2://…` или адрес `socks5://host:port`. Через прокси идёт только SoundCloud, остальные площадки работают напрямую.
 - **YouTube и системный плеер.** Вход не нужен.
 
 <br>

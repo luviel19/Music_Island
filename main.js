@@ -73,19 +73,69 @@ function proxyRule(v) {
   const k = (m[1] || 'http').toLowerCase();
   return `${k.startsWith('socks') ? (k === 'socks4' ? 'SOCKS4' : 'SOCKS5') : k === 'https' ? 'HTTPS' : 'PROXY'} ${m[2]}`;
 }
-function applyProxy() {
-  const rule = proxyRule(S.proxy);
+const tunnel = require('./tunnel')(app);
+const builtinLink = () => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'builtin-proxy.json'), 'utf8')).link || null; } catch { return null; } };
+const hasBuiltin = () => !!builtinLink() && tunnel.available();
+// режим: off (системные настройки) | builtin (наш прокси) | custom (адрес или ссылка hysteria2 пользователя)
+const proxyMode = () => S.proxyMode || (S.proxy ? 'custom' : 'off');
+const customTarget = () => (S.proxyCustom ? dec(S.proxyCustom) : S.proxy) || '';
+const isSub = (v) => /^https?:\/\/[^\s/]+\/\S+$/i.test(String(v || '').trim()) && !proxyRule(v);
+// подписка VPN: список ссылок (обычно в base64) — берём из неё hysteria2-серверы
+async function subscriptionLinks(url) {
+  const r = await net.fetch(url, { headers: { 'User-Agent': 'v2rayN/6.0' } });
+  if (!r.ok) throw new Error(`Подписка недоступна (HTTP ${r.status})`);
+  let t = (await r.text()).trim();
+  if (!/:\/\//.test(t)) { try { t = Buffer.from(t.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'); } catch { /* не base64 */ } }
+  const all = t.split(/\s+/).filter((x) => /^[a-z0-9]+:\/\//i.test(x));
+  const hy = all.filter((x) => tunnel.isHy(x));
+  if (!hy.length) throw new Error(`В подписке нет серверов hysteria2 (всего ссылок: ${all.length}). Другие протоколы, например vless, остров не поддерживает`);
+  return hy;
+}
+// перебираем серверы по порядку; первый, к которому удалось подключиться, остаётся (недавно рабочий — первым)
+async function startFromSub(url) {
+  let links;
+  try { links = await subscriptionLinks(url); } catch (e) { if (!S.proxyLast) throw e; links = []; }
+  const last = S.proxyLast ? dec(S.proxyLast) : null;
+  if (last) links = [last, ...links.filter((x) => x !== last)];
+  let err;
+  for (const l of links) {
+    try { const addr = await tunnel.start(l, 6000); S.proxyLast = enc(l); saveSettings(); return addr; } catch (e) { err = e; }
+  }
+  throw err || new Error('Нет доступных серверов');
+}
+async function applyProxy() {
+  const mode = proxyMode();
+  const target = mode === 'builtin' ? builtinLink() : mode === 'custom' ? customTarget() : '';
+  let rule = null;
+  try {
+    if (target && isSub(target)) rule = proxyRule(await startFromSub(target.trim()));
+    else if (target && tunnel.isHy(target)) rule = proxyRule(await tunnel.start(target));
+    else { tunnel.stop(); rule = target ? proxyRule(target) : null; }
+  } catch (e) {
+    tunnel.stop();
+    dialog.showErrorBox('Music Island', `Прокси не запустился.
+${e.message}`);
+  }
   const cfg = rule
     ? { mode: 'pac_script', pacScript: 'data:application/x-ns-proxy-autoconfig;base64,' + Buffer.from(
       `function FindProxyForURL(u,h){return /${SC_HOSTS}/.test(h)?"${rule}":"DIRECT";}`).toString('base64') }
     : { mode: 'system' };
-  return session.defaultSession.setProxy(cfg).then(() => session.defaultSession.closeAllConnections());
+  await session.defaultSession.setProxy(cfg);
+  await session.defaultSession.closeAllConnections();
 }
 const activeProvider = () => providers.find((p) => p.id === S.source) || providers[0];
 
+// сетевые ошибки Chromium по-человечески (особенно про прокси)
+function friendly(e) {
+  const m = String(e.message || e);
+  if (/ERR_PROXY_CERTIFICATE_INVALID/.test(m)) return 'Прокси с недействительным сертификатом: возьмите socks5://… или http://…';
+  if (/ERR_PROXY_CONNECTION_FAILED|ERR_TUNNEL_CONNECTION_FAILED/.test(m)) return 'Прокси не отвечает или не пускает: проверьте адрес';
+  if (/ERR_CERT_/.test(m)) return 'Ошибка сертификата: прокси подменяет трафик, это небезопасно';
+  return m;
+}
 function handle(name, fn) {
   ipcMain.handle(name, async (_e, ...args) => {
-    try { return { ok: true, data: await fn(...args) }; } catch (e) { return { ok: false, error: e.message }; }
+    try { return { ok: true, data: await fn(...args) }; } catch (e) { return { ok: false, error: friendly(e) }; }
   });
 }
 for (const p of providers) {
@@ -185,13 +235,15 @@ function buildMenu() {
     { label: 'Раскрывать при наведении', type: 'checkbox', checked: S.hoverExpand, click: toggle('hoverExpand') },
     { label: 'Закрепить положение', type: 'checkbox', checked: S.lockPosition, click: toggle('lockPosition') },
     { label: 'Запускать с Windows', type: 'checkbox', checked: S.autoStart, click: toggle('autoStart') },
-    { label: S.proxy ? `Прокси SoundCloud: ${S.proxy}` : 'Прокси SoundCloud: выключен', submenu: [
-      { label: 'Взять из буфера обмена (host:port, socks5://host:port)', click: async () => {
+    { label: `Прокси SoundCloud: ${{ off: 'выключен', builtin: 'наш', custom: 'свой' }[proxyMode()]}`, submenu: [
+      ...(hasBuiltin() ? [{ label: 'Использовать наш прокси', type: 'radio', checked: proxyMode() === 'builtin', click: () => { S.proxyMode = 'builtin'; saveSettings(); applyProxy().finally(() => tray?.setContextMenu(buildMenu())); } }] : []),
+      { label: 'Вставить свой VPN или прокси (из буфера)', type: 'radio', checked: proxyMode() === 'custom', click: async () => {
         const v = (await ctx.readClip()).trim();
-        if (!proxyRule(v)) { dialog.showErrorBox('Music Island', 'В буфере обмена нет адреса прокси.\nСкопируйте, например: 127.0.0.1:1080 или socks5://127.0.0.1:1080'); return; }
-        S.proxy = v; saveSettings(); applyProxy(); tray?.setContextMenu(buildMenu());
+        if (!proxyRule(v) && !tunnel.isHy(v) && !isSub(v)) { dialog.showErrorBox('Music Island', 'В буфере обмена нет адреса прокси.\nПодходит: ссылка на подписку VPN (https://…), hysteria2://…, socks5://host:port или 127.0.0.1:1080'); tray?.setContextMenu(buildMenu()); return; }
+        S.proxyCustom = enc(v); S.proxy = ''; S.proxyMode = 'custom'; saveSettings();
+        applyProxy().finally(() => tray?.setContextMenu(buildMenu()));
       } },
-      { label: 'Выключить', enabled: !!S.proxy, click: () => { S.proxy = ''; saveSettings(); applyProxy(); tray?.setContextMenu(buildMenu()); } },
+      { label: 'Выключить', type: 'radio', checked: proxyMode() === 'off', click: () => { S.proxyMode = 'off'; saveSettings(); applyProxy().finally(() => tray?.setContextMenu(buildMenu())); } },
     ] },
     { label: 'Вернуть в центр экрана', click: () => { const p = defaultPosition(); win.setPosition(p.x, p.y); S.x = p.x; S.y = p.y; saveSettings(); } },
     { type: 'separator' },
@@ -223,6 +275,7 @@ app.whenReady().then(() => {
   }
 });
 
+app.on('will-quit', () => tunnel.stop());
 app.on('second-instance', () => { if (win) { win.showInactive(); win.moveTop(); } });
 app.on('will-quit', () => { globalShortcut.unregisterAll(); providers.forEach((p) => p.dispose?.()); });
 app.on('window-all-closed', (e) => e.preventDefault()); // живём в трее
