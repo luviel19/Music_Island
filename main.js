@@ -60,7 +60,7 @@ const dec = (v) => {
 const ctx = {
   data: (id) => (S.providers[id] ||= {}),
   save: saveSettings,
-  enc, dec, clipboard, shell, session, BrowserWindow,
+  enc, dec, clipboard, readClip: async () => String((await clipboard.readText()) || ''), shell, session, BrowserWindow,
   fetch: (u, o) => net.fetch(u, o), // идёт через сессию Electron, поэтому учитывает прокси
 };
 const providers = require('./providers')(ctx);
@@ -186,8 +186,8 @@ function buildMenu() {
     { label: 'Закрепить положение', type: 'checkbox', checked: S.lockPosition, click: toggle('lockPosition') },
     { label: 'Запускать с Windows', type: 'checkbox', checked: S.autoStart, click: toggle('autoStart') },
     { label: S.proxy ? `Прокси SoundCloud: ${S.proxy}` : 'Прокси SoundCloud: выключен', submenu: [
-      { label: 'Взять из буфера обмена (host:port, socks5://host:port)', click: () => {
-        const v = clipboard.readText().trim();
+      { label: 'Взять из буфера обмена (host:port, socks5://host:port)', click: async () => {
+        const v = (await ctx.readClip()).trim();
         if (!proxyRule(v)) { dialog.showErrorBox('Music Island', 'В буфере обмена нет адреса прокси.\nСкопируйте, например: 127.0.0.1:1080 или socks5://127.0.0.1:1080'); return; }
         S.proxy = v; saveSettings(); applyProxy(); tray?.setContextMenu(buildMenu());
       } },

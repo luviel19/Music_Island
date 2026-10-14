@@ -103,7 +103,7 @@ module.exports = function createYandex(ctx) {
       w.loadURL(`https://oauth.yandex.ru/authorize?response_type=token&client_id=${CLIENT_ID}`);
     }),
     paste: async () => {
-      let t = ctx.clipboard.readText().trim();
+      let t = (await ctx.readClip()).trim();
       const m = /access_token=([^&\s]+)/.exec(t);
       if (m) t = m[1];
       if (!t || /\s/.test(t) || t.length < 20) throw new Error('В буфере обмена нет токена');

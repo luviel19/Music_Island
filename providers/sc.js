@@ -111,7 +111,7 @@ module.exports = function createSoundCloud(ctx) {
         return r;
       }
       if (mode === 'link') {
-        const m = /https?:\/\/(?:on\.|m\.|www\.)?soundcloud\.com\/\S+/i.exec(ctx.clipboard.readText());
+        const m = /https?:\/\/(?:on\.|m\.|www\.)?soundcloud\.com\/\S+/i.exec(await ctx.readClip());
         if (!m) throw new Error('В буфере нет ссылки на SoundCloud');
         const o = await api('/resolve', { query: { url: m[0].replace(/[)\].,;]+$/, '') } });
         if (o.kind === 'track') {

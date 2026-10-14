@@ -91,8 +91,8 @@ module.exports = function createSpotify(ctx) {
       if (!hasClientId || !d().refresh) return { hasClientId, builtin, authed: false };
       try { await ensureToken(); return { hasClientId, builtin, authed: true }; } catch { return { hasClientId, builtin, authed: false }; }
     },
-    clientId: () => {
-      const id = /[0-9a-f]{32}/i.exec(ctx.clipboard.readText())?.[0];
+    clientId: async () => {
+      const id = /[0-9a-f]{32}/i.exec(await ctx.readClip())?.[0];
       if (!id) throw new Error('В буфере обмена нет Client ID (32 символа)');
       d().clientId = id; d().refresh = null; access = null; ctx.save();
       return true;

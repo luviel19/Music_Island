@@ -90,7 +90,7 @@ module.exports = function createYouTube(ctx) {
           return { tracks: seed };
         }
         if (mode === 'link') {
-          const { v, list } = parseLink(ctx.clipboard.readText());
+          const { v, list } = parseLink(await ctx.readClip());
           if (!v && !list) throw new Error('В буфере нет ссылки на YouTube');
           const tracks = await mix(v || '', list && !list.startsWith('RD') ? list : undefined).catch(() => []);
           if (v && !tracks.some((t) => t.id === v)) {
