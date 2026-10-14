@@ -12,7 +12,7 @@
 ![Platform](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=for-the-badge&logo=windows11&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron-44-47848F?style=for-the-badge&logo=electron&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-ff4d94?style=for-the-badge)
-![Version](https://img.shields.io/badge/version-0.1.0-ffb347?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.2.2-ffb347?style=for-the-badge)
 
 <br>
 
@@ -91,7 +91,7 @@ npm run dist
 ## 🔑 Вход
 
 - **Яндекс Музыка.** Остров сам подскажет, как получить токен, и покажет кнопку вставки. Токен хранится только на вашем ПК, в зашифрованном виде.
-- **SoundCloud.** Музыку можно слушать без входа. Для лайков вставьте значение cookie `oauth_token`.
+- **SoundCloud.** Музыку можно слушать без входа. Для лайков вставьте значение cookie `oauth_token`. Если сервис недоступен в вашей стране, скопируйте адрес прокси (`127.0.0.1:1080` или `socks5://host:port`) и выберите в трее **«Прокси SoundCloud» → «Взять из буфера обмена»**. Через прокси идёт только SoundCloud, остальные площадки работают напрямую.
 - **YouTube и системный плеер.** Вход не нужен.
 
 <br>

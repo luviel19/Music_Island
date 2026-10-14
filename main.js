@@ -1,6 +1,6 @@
 const {
   app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, shell,
-  globalShortcut, safeStorage, clipboard, session,
+  globalShortcut, safeStorage, clipboard, session, net, dialog,
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -61,9 +61,26 @@ const ctx = {
   data: (id) => (S.providers[id] ||= {}),
   save: saveSettings,
   enc, dec, clipboard, shell, session, BrowserWindow,
+  fetch: (u, o) => net.fetch(u, o), // идёт через сессию Electron, поэтому учитывает прокси
 };
 const providers = require('./providers')(ctx);
 const updater = require('./updater')((info) => { win?.webContents.send('update', info); tray?.setContextMenu(buildMenu()); });
+// прокси только для SoundCloud (в РФ он закрыт): остальные площадки ходят напрямую
+const SC_HOSTS = String.raw`(^|\.)(soundcloud\.com|sndcdn\.com|soundcloud\.cloud)$`;
+function proxyRule(v) {
+  const m = /^(?:(socks5|socks4|socks|http|https):\/\/)?([^\s/:]+:\d+)\/?$/i.exec(String(v || '').trim());
+  if (!m) return null;
+  const k = (m[1] || 'http').toLowerCase();
+  return `${k.startsWith('socks') ? (k === 'socks4' ? 'SOCKS4' : 'SOCKS5') : k === 'https' ? 'HTTPS' : 'PROXY'} ${m[2]}`;
+}
+function applyProxy() {
+  const rule = proxyRule(S.proxy);
+  const cfg = rule
+    ? { mode: 'pac_script', pacScript: 'data:application/x-ns-proxy-autoconfig;base64,' + Buffer.from(
+      `function FindProxyForURL(u,h){return /${SC_HOSTS}/.test(h)?"${rule}":"DIRECT";}`).toString('base64') }
+    : { mode: 'system' };
+  return session.defaultSession.setProxy(cfg).then(() => session.defaultSession.closeAllConnections());
+}
 const activeProvider = () => providers.find((p) => p.id === S.source) || providers[0];
 
 function handle(name, fn) {
@@ -168,6 +185,14 @@ function buildMenu() {
     { label: 'Раскрывать при наведении', type: 'checkbox', checked: S.hoverExpand, click: toggle('hoverExpand') },
     { label: 'Закрепить положение', type: 'checkbox', checked: S.lockPosition, click: toggle('lockPosition') },
     { label: 'Запускать с Windows', type: 'checkbox', checked: S.autoStart, click: toggle('autoStart') },
+    { label: S.proxy ? `Прокси SoundCloud: ${S.proxy}` : 'Прокси SoundCloud: выключен', submenu: [
+      { label: 'Взять из буфера обмена (host:port, socks5://host:port)', click: () => {
+        const v = clipboard.readText().trim();
+        if (!proxyRule(v)) { dialog.showErrorBox('Music Island', 'В буфере обмена нет адреса прокси.\nСкопируйте, например: 127.0.0.1:1080 или socks5://127.0.0.1:1080'); return; }
+        S.proxy = v; saveSettings(); applyProxy(); tray?.setContextMenu(buildMenu());
+      } },
+      { label: 'Выключить', enabled: !!S.proxy, click: () => { S.proxy = ''; saveSettings(); applyProxy(); tray?.setContextMenu(buildMenu()); } },
+    ] },
     { label: 'Вернуть в центр экрана', click: () => { const p = defaultPosition(); win.setPosition(p.x, p.y); S.x = p.x; S.y = p.y; saveSettings(); } },
     { type: 'separator' },
     ...providers.map((p) => ({ label: `Выйти из ${p.name}`, click: () => { p.handlers.logout(); send(`logout:${p.id}`); } })),
@@ -177,6 +202,7 @@ function buildMenu() {
 
 app.whenReady().then(() => {
   loadSettings();
+  applyProxy().catch(() => {});
   createWindow();
 
   tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'assets', 'tray.png')).resize({ width: 32, height: 32 }));

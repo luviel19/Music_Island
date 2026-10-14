@@ -303,9 +303,13 @@ dd { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
 .pc:active { transform: scale(.94); }
 .pc.cur { box-shadow: 0 0 0 1.5px rgb(var(--accent)); }
 @keyframes rowin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.tools .ib { width: 28px; }
-.controls { position: relative; }
-.transport { position: absolute; left: 50%; transform: translateX(-50%); flex: none !important; }
+.tools .ib { width: 24px; }
+.controls > div { flex: none; }
+.controls { gap: 6px; }
+.transport { gap: 4px; }
+.transport .ib { width: 34px; }
+.play { width: 44px; height: 44px; }
+.seg .ib { width: 28px; }
 
 /* ───── обновление ───── */
 .l-update { width: 380px; height: 170px; }

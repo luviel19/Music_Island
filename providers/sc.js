@@ -10,10 +10,10 @@ module.exports = function createSoundCloud(ctx) {
 
   async function getCid(force) {
     if (cid && !force) return cid;
-    const home = await (await fetch('https://soundcloud.com/', { headers: { 'User-Agent': UA } })).text();
+    const home = await (await ctx.fetch('https://soundcloud.com/', { headers: { 'User-Agent': UA } })).text();
     const urls = [...home.matchAll(/<script[^>]+src="(https:\/\/a-v2\.sndcdn\.com\/assets\/[^"]+\.js)"/g)].map((m) => m[1]).reverse();
     for (const u of urls) {
-      const js = await (await fetch(u, { headers: { 'User-Agent': UA } })).text();
+      const js = await (await ctx.fetch(u, { headers: { 'User-Agent': UA } })).text();
       const m = /client_id\s*[:=]\s*"([a-zA-Z0-9]{32})"/.exec(js);
       if (m) {
         cid = m[1];
@@ -31,7 +31,7 @@ module.exports = function createSoundCloud(ctx) {
       const headers = { 'User-Agent': UA, Accept: 'application/json' };
       const token = auth ? getToken() : null;
       if (token) headers.Authorization = `OAuth ${token}`;
-      const r = await fetch(url, { headers, method });
+      const r = await ctx.fetch(url, { headers, method });
       if ((r.status === 401 || r.status === 403) && attempt === 0) continue; // возможно протух client_id
       if (r.status === 401 || r.status === 403) throw new Error(token ? 'auth' : `HTTP ${r.status}`);
       if (!r.ok) { console.error('[sc]', method, url.pathname, r.status); throw new Error(`HTTP ${r.status}`); }
@@ -154,7 +154,7 @@ module.exports = function createSoundCloud(ctx) {
     },
     wave: async (url) => {
       if (!/^https:\/\/wave\.sndcdn\.com\//.test(url)) throw new Error('bad url');
-      const j = await (await fetch(url, { headers: { 'User-Agent': UA } })).json();
+      const j = await (await ctx.fetch(url, { headers: { 'User-Agent': UA } })).json();
       return { samples: j.samples, height: j.height };
     },
     like: async ({ id, like }) => {
