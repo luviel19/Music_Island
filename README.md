@@ -12,7 +12,7 @@
 ![Platform](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=for-the-badge&logo=windows11&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron-44-47848F?style=for-the-badge&logo=electron&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-ff4d94?style=for-the-badge)
-![Version](https://img.shields.io/badge/version-0.2.6-ffb347?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.2.7-ffb347?style=for-the-badge)
 
 <br>
 

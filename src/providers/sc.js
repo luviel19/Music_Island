@@ -19,7 +19,13 @@ Providers.register(makeQueueProvider({
   },
   search: (host, q) => host.raw('sc:search', q),
   related: (host, t) => host.raw('sc:related', { id: t.id }),
-  resolveUrl: (host, t) => host.call('sc:url', { tc: t.tc, ta: t.ta }),
+  // HLS-треки приходят целиком байтами: отдаём плееру blob-ссылку (предыдущую освобождаем)
+  async resolveUrl(host, t) {
+    const r = await host.call('sc:url', { tc: t.tc, ta: t.ta, tf: t.tf });
+    if (typeof r === 'string') return r;
+    if (window.__scBlob) URL.revokeObjectURL(window.__scBlob);
+    return (window.__scBlob = URL.createObjectURL(new Blob([r.bytes], { type: r.mime })));
+  },
   like: (host, t, on) => host.call('sc:like', { id: t.id, like: on }),
   trackUrl: (t) => t.url || null,
   async wave(t, host) {

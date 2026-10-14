@@ -40,17 +40,48 @@ module.exports = function createSoundCloud(ctx) {
     }
   }
 
+  // SoundCloud всё чаще отдаёт только HLS: берём progressive, иначе HLS с mp3, иначе HLS с AAC (без шифрования)
+  function pickTranscoding(t) {
+    const list = t.media?.transcodings || [];
+    const mime = (x) => x.format?.mime_type || '';
+    const aac = list.filter((x) => x.format?.protocol === 'hls' && /mp4a/.test(mime(x)));
+    return list.find((x) => x.format?.protocol === 'progressive')
+      || list.find((x) => x.format?.protocol === 'hls' && mime(x) === 'audio/mpeg')
+      || aac.find((x) => x.preset === 'aac_160k') || aac[0];
+  }
   function norm(t) {
-    const tc = (t.media?.transcodings || []).find((x) => x.format?.protocol === 'progressive');
+    const tc = pickTranscoding(t);
     if (!t.title || !tc) return null;
     const art = (t.artwork_url || t.user?.avatar_url || '').replace('-large.', '-t500x500.');
     return {
       id: String(t.id), title: t.title, artists: t.user?.username || '',
       album: '', year: (t.created_at || '').slice(0, 4), genre: t.genre || '',
       cover: art || null, durationMs: t.duration || t.full_duration || 0, available: true,
-      tc: tc.url, ta: t.track_authorization || '', url: t.permalink_url || null, waveUrl: (t.waveform_url || '').replace(/\.png$/, '.json') || null, liked: false,
+      tc: tc.url, tf: tc.format.protocol === 'progressive' ? 'p' : /mp4a/.test(tc.format.mime_type) ? 'a' : 'm', ta: t.track_authorization || '', url: t.permalink_url || null, waveUrl: (t.waveform_url || '').replace(/\.png$/, '.json') || null, liked: false,
     };
   }
+  // HLS: плейлист → сегменты → один буфер (Chromium без HLS, а mp3/fMP4-сегменты склеиваются как есть)
+  async function hlsDownload(playlistUrl, mime) {
+    const text = await (await ctx.fetch(playlistUrl, { headers: { 'User-Agent': UA } })).text();
+    if (/#EXT-X-KEY:(?!METHOD=NONE)/.test(text)) throw new Error('Трек зашифрован, его нельзя воспроизвести');
+    const urls = [];
+    const map = /#EXT-X-MAP:URI="([^"]+)"/.exec(text);
+    if (map) urls.push(new URL(map[1], playlistUrl).href);
+    for (const line of text.split(/\r?\n/)) if (line && !line.startsWith('#')) urls.push(new URL(line.trim(), playlistUrl).href);
+    if (!urls.length) throw new Error('Пустой плейлист SoundCloud');
+    const parts = new Array(urls.length);
+    let next = 0;
+    await Promise.all(Array.from({ length: 6 }, async () => {
+      while (next < urls.length) {
+        const i = next++;
+        const r = await ctx.fetch(urls[i], { headers: { 'User-Agent': UA } });
+        if (!r.ok) throw new Error(`Сегмент недоступен (HTTP ${r.status})`);
+        parts[i] = Buffer.from(await r.arrayBuffer());
+      }
+    }));
+    return { bytes: Buffer.concat(parts), mime };
+  }
+
   const normList = (arr) => arr.map(norm).filter(Boolean);
 
   async function hydrate(items) {
@@ -148,10 +179,11 @@ module.exports = function createSoundCloud(ctx) {
       const j = await api(`/tracks/${encodeURIComponent(id)}/related`, { query: { limit: 30 } });
       return normList(j.collection || []);
     },
-    url: async ({ tc, ta }) => {
+    url: async ({ tc, ta, tf }) => {
       const j = await api(tc, { query: { track_authorization: ta }, auth: !!getToken() });
       if (!j?.url) throw new Error('Трек недоступен');
-      return j.url;
+      if (tf === 'p' || !tf) return j.url;
+      return hlsDownload(j.url, tf === 'a' ? 'audio/mp4' : 'audio/mpeg');
     },
     wave: async (url) => {
       if (!/^https:\/\/wave\.sndcdn\.com\//.test(url)) throw new Error('bad url');
