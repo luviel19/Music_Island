@@ -44,7 +44,7 @@ Providers.register((() => {
     hint: 'Spotify в браузере, любой плеер',
     icon: 'i-media',
     modes: [],
-    caps: { shuffle: false, like: false, queue: false, volume: false },
+    caps: { shuffle: false, like: false, queue: false, volume: false, eq: false },
 
     async start(h) {
       host = h;

@@ -342,3 +342,70 @@ dd { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
 .alt svg { width: 24px; height: 24px; }
 .alt:hover { transform: scale(1.14); background: rgba(255, 255, 255, .18); }
 .alt:active { transform: scale(.94); }
+
+/* ───── эквалайзер ───── */
+#island[data-state="eq"]   { --w: 460px; --h: 318px; --r: 32px; }
+#island[data-state="tune"] { --w: 460px; --h: 352px; --r: 32px; }
+#island[data-state="eq"] .l-eq,
+#island[data-state="tune"] .l-tune {
+  opacity: 1; pointer-events: auto; filter: none; transform: translateX(-50%) scale(1);
+  transition: opacity .3s .12s, transform .45s .08s var(--ease-out), filter .3s .1s;
+}
+.l-eq, .l-tune { width: 460px; padding: 14px 16px 0; }
+.l-eq { height: 318px; }
+.l-tune { height: 352px; }
+header .grow { flex: 1; }
+.chip.sm { height: 24px; padding: 0 11px; font-size: 11.5px; border-radius: 12px; }
+
+.switch { width: 38px; height: 22px; border-radius: 11px; background: rgba(255, 255, 255, .18); position: relative; flex: none; margin-left: 4px; transition: background .2s; }
+.switch i { position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .25s var(--ease); }
+.switch.on { background: rgb(var(--accent)); }
+.switch.on i { transform: translateX(16px); background: #000; }
+
+.eq-presets { display: flex; gap: 6px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.eq-presets::-webkit-scrollbar { display: none; }
+.pchip {
+  flex: none; height: 26px; padding: 0 11px; border-radius: 13px; font-size: 12px; font-weight: 600;
+  background: rgba(255, 255, 255, .09); color: var(--dim); display: inline-flex; align-items: center; gap: 4px;
+  transition: background .15s, color .15s;
+}
+.pchip:hover { background: rgba(255, 255, 255, .17); color: #fff; }
+.pchip.sel { background: #fff; color: #000; }
+.pchip .x { width: 14px; height: 14px; margin-right: -5px; border-radius: 50%; display: none; place-items: center; }
+.pchip .x svg { width: 9px; height: 9px; }
+.pchip:hover .x { display: grid; }
+.pchip .x:hover { background: rgba(0, 0, 0, .2); }
+.pchip.add { width: 26px; padding: 0; justify-content: center; }
+.pchip.add svg { width: 13px; height: 13px; }
+.pname { flex: none; height: 26px; width: 120px; border-radius: 13px; border: 0; outline: 0; padding: 0 10px; font: inherit; font-size: 12px; color: #fff; background: rgba(255, 255, 255, .14); box-shadow: inset 0 0 0 1.5px rgba(var(--accent), .8); user-select: text; }
+
+.eq-main { transition: opacity .25s; }
+.l-eq.disabled .eq-main { opacity: .38; }
+.eq-bands { display: flex; justify-content: space-between; margin-top: 12px; height: 178px; padding: 0 2px; }
+.eqb { width: 38px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.eqb .v { font-size: 10.5px; color: var(--dim); font-variant-numeric: tabular-nums; height: 13px; }
+.eqb .f { font-size: 11px; color: #fff; font-weight: 600; }
+.eqb .track { position: relative; flex: 1; width: 100%; cursor: ns-resize; touch-action: none; }
+.eqb .track::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; margin-left: -2px; border-radius: 2px; background: rgba(255, 255, 255, .13); }
+.eqb .track::after { content: ""; position: absolute; left: 30%; right: 30%; top: 50%; height: 1px; background: rgba(255, 255, 255, .22); }
+.eqb .fill { position: absolute; left: 50%; width: 4px; margin-left: -2px; border-radius: 2px; background: rgb(var(--accent)); z-index: 1; }
+.eqb .knob { position: absolute; left: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .5); z-index: 2; transition: transform .12s; }
+.eqb .track:hover .knob, .eqb .track.drag .knob { transform: scale(1.15); }
+
+.eq-pre { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 12px; color: var(--dim); }
+.eq-pre .bar { cursor: ew-resize; touch-action: none; }
+.eq-pre .fill { background: rgb(var(--accent)); }
+.eq-pre .knob { position: absolute; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: #fff; z-index: 2; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
+.eq-pre .v { width: 46px; text-align: right; font-variant-numeric: tabular-nums; }
+.eq-off { display: none; position: absolute; left: 30px; right: 30px; top: 150px; text-align: center; color: #fff; font-size: 12.5px; line-height: 1.45; padding: 12px 16px; border-radius: 16px; background: rgba(20, 20, 22, .92); box-shadow: 0 0 0 1px rgba(255, 255, 255, .08); }
+.l-eq.na .eq-off { display: block; }
+.l-eq.na .eq-main, .l-eq.na .eq-presets { opacity: .25; pointer-events: none; }
+
+/* ───── настройка волны ───── */
+.tune-body { height: 290px; margin-top: 6px; }
+.tgroup { margin: 4px 0 12px; }
+.tgroup h4 { margin: 0 0 7px 2px; font-size: 11.5px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .04em; }
+.tchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tchips .pchip { height: 28px; padding: 0 13px; font-size: 12.5px; }
+.seg .ib.tuned { color: rgb(var(--accent)); }
+.l-eq.na #eqReset, .l-eq.na #eqOn { opacity: .3; pointer-events: none; }

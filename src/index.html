@@ -35,6 +35,9 @@
     <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.7l1-1" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-eq" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 4v16M12 4v16M18 4v16"/><circle cx="6" cy="14.5" r="2.3" fill="currentColor"/><circle cx="12" cy="8.5" r="2.3" fill="currentColor"/><circle cx="18" cy="12.5" r="2.3" fill="currentColor"/></g></symbol>
+    <symbol id="i-tune" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l1.6 4.2 4.4.3-3.4 2.8 1.1 4.3L12 12.7l-3.7 2.4 1.1-4.3L6 8l4.4-.3z"/><path d="M5 19.5h14"/></g></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
   </defs>
 </svg>
 
@@ -86,6 +89,7 @@
         <div class="tools">
           <button class="ib" id="vol" data-tip="Громкость"><svg><use href="#i-vol"/></svg></button>
           <button class="ib" id="shuffle" data-tip="Перемешать избранное"><svg><use href="#i-shuffle"/></svg></button>
+          <button class="ib" id="toEq" data-tip="Эквалайзер"><svg><use href="#i-eq"/></svg></button>
           <button class="ib" id="toSearch" data-tip="Поиск"><svg><use href="#i-search"/></svg></button>
           <button class="ib" id="toQueue" data-tip="Очередь"><svg><use href="#i-list"/></svg></button>
           <button class="ib" id="toInfo" data-tip="Подробности"><svg><use href="#i-info"/></svg></button>
@@ -112,6 +116,32 @@
       </header>
       <div class="sstat" id="sstat"></div>
       <div class="list slist" id="slist"></div>
+    </section>
+
+    <!-- эквалайзер -->
+    <section class="layer l-eq">
+      <header>
+        <button class="ib back" data-back><svg><use href="#i-back"/></svg></button><h3>Эквалайзер</h3>
+        <span class="grow"></span>
+        <button class="chip sm" id="eqReset" data-tip="Все полосы в 0">Сброс</button>
+        <button class="switch" id="eqOn" role="switch" data-tip="Включить эквалайзер"><i></i></button>
+      </header>
+      <div class="eq-presets" id="eqPresets"></div>
+      <div class="eq-main">
+        <div class="eq-bands" id="eqBands"></div>
+        <div class="eq-pre">
+          <span>Предусилитель</span>
+          <div class="bar" id="eqPre"><div class="fill" id="eqPreFill"></div><b class="knob" id="eqPreKnob"></b></div>
+          <span class="v" id="eqPreV">0 дБ</span>
+        </div>
+      </div>
+      <div class="eq-off" id="eqNote"></div>
+    </section>
+
+    <!-- настройка волны -->
+    <section class="layer l-tune">
+      <header><button class="ib back" data-back><svg><use href="#i-back"/></svg></button><h3 id="tuneTitle">Настроить волну</h3></header>
+      <div class="list tune-body" id="tuneBody"></div>
     </section>
 
     <!-- подробности -->
@@ -158,6 +188,7 @@
   <div id="menu" role="listbox"></div>
 </div>
 
+<script src="audio-fx.js"></script>
 <script src="providers/registry.js"></script>
 <script src="providers/queue.js"></script>
 <script src="providers/ym.js"></script>

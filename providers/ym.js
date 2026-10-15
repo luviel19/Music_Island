@@ -79,6 +79,59 @@ module.exports = function createYandex(ctx) {
     return `https://${host}/get-mp3/${sign}/${ts}${p}`;
   }
 
+  // ── настройка «Моей волны» ──
+  // Сиды настроек выглядят как `settingMoodEnergy:calm`. Если сервер не отдал список, берём известные значения.
+  const ANY = { id: '', label: 'Любое' };
+  const FALLBACK_GROUPS = [
+    { id: 'diversity', label: 'Характер', options: [ANY, ...[['favorite', 'Любимое'], ['discover', 'Незнакомое'], ['popular', 'Популярное']].map(([v, l]) => ({ id: `settingDiversity:${v}`, label: l }))] },
+    { id: 'moodEnergy', label: 'Настроение', options: [ANY, ...[['active', 'Бодрое'], ['fun', 'Весёлое'], ['calm', 'Спокойное'], ['sad', 'Грустное']].map(([v, l]) => ({ id: `settingMoodEnergy:${v}`, label: l }))] },
+    { id: 'language', label: 'Язык', options: [ANY, ...[['russian', 'Русский'], ['not-russian', 'Иностранный']].map(([v, l]) => ({ id: `settingLanguage:${v}`, label: l }))] },
+  ];
+  const GROUP_LABELS = { diversity: 'Характер', moodEnergy: 'Настроение', language: 'Язык', activity: 'Занятие' };
+
+  // ответ /rotor/wave/settings разбираем осторожно: формат неофициальный и меняется
+  function parseWaveSettings(r) {
+    const groups = [];
+    const restr = r?.settingRestrictions || {};
+    for (const [key, v] of Object.entries(restr)) {
+      const vals = v?.possibleValues;
+      if (!Array.isArray(vals) || !vals.length) continue;
+      const opts = vals.map((p) => ({
+        id: p.unspecified ? '' : p.serializedSeed || `setting${key[0].toUpperCase()}${key.slice(1)}:${p.value}`,
+        label: String(p.name || p.value),
+      }));
+      if (!opts.some((o) => o.id === '')) opts.unshift(ANY);
+      groups.push({ id: key, label: GROUP_LABELS[key] || v.name || key, options: opts });
+    }
+    // блоки «занятий» (работа, спорт, сон…): элементы с сидами
+    const ctxOpts = [];
+    const walk = (o) => {
+      if (!o || typeof o !== 'object') return;
+      const seeds = Array.isArray(o.seeds) ? o.seeds : o.seed ? [o.seed] : null;
+      const title = o.title || o.name;
+      if (seeds?.length && typeof title === 'string') {
+        const id = seeds.map((x) => (typeof x === 'string' ? x : x?.type && x?.tag ? `${x.type}:${x.tag}` : x?.value)).filter(Boolean).join(',');
+        if (id && id !== STATION && !ctxOpts.some((c) => c.id === id)) ctxOpts.push({ id, label: title });
+        return;
+      }
+      for (const k in o) walk(o[k]);
+    };
+    walk(r?.blocks);
+    if (ctxOpts.length) groups.unshift({ id: 'activity', label: 'Занятие', options: [ANY, ...ctxOpts.slice(0, 16)] });
+    return groups;
+  }
+
+  // выбранные значения → сиды сессии
+  const seedsOf = (value) => [STATION, ...Object.values(value || {}).filter(Boolean).flatMap((v) => String(v).split(','))];
+
+  async function sessionNew(seeds, queue) {
+    const r = await api('/rotor/session/new', {
+      method: 'POST', json: { seeds, queue: queue || [], includeTracksInResponse: true },
+    });
+    if (!r?.radioSessionId) throw new Error('Не удалось запустить волну');
+    return r;
+  }
+
   const handlers = {
     status: async () => {
       if (!getToken()) return { authed: false };
@@ -126,6 +179,34 @@ module.exports = function createYandex(ctx) {
       if (type === 'radioStarted') ev.from = 'radio-mobile-user-onyourwave-default';
       await api(`/rotor/station/${STATION}/feedback`, {
         method: 'POST', query: batchId ? { 'batch-id': batchId } : {}, json: ev,
+      });
+      return true;
+    },
+    waveSettings: async () => {
+      let groups = [];
+      try { groups = parseWaveSettings(await api('/rotor/wave/settings', { query: { seeds: STATION } })); } catch (e) { console.error('[ym] wave settings:', e.message); }
+      const known = new Set(groups.map((g) => g.id));
+      return groups.concat(FALLBACK_GROUPS.filter((g) => !known.has(g.id)));
+    },
+    // волна с настройками: сессия по сидам; первая партия приходит сразу
+    tunedWave: async ({ value, queue }) => {
+      let r;
+      try { r = await sessionNew(seedsOf(value), queue); } catch (e) {
+        if (e.message === 'auth' || !value?.activity) throw e;
+        r = await sessionNew(seedsOf({ ...value, activity: '' }), queue); // сид занятия не принят — без него
+      }
+      return { sessionId: r.radioSessionId, batchId: r.batchId, tracks: (r.sequence || []).map((s) => norm(s.track)) };
+    },
+    tunedMore: async ({ sessionId, queue }) => {
+      const r = await api(`/rotor/session/${encodeURIComponent(sessionId)}/tracks`, { method: 'POST', json: { queue: queue || [] } });
+      return { batchId: r.batchId, tracks: (r.sequence || []).map((s) => norm(s.track)) };
+    },
+    tunedFeedback: async ({ sessionId, batchId, type, trackId, seconds }) => {
+      const event = { type, timestamp: new Date().toISOString() };
+      if (trackId) event.trackId = trackId;
+      if (seconds != null) event.totalPlayedSeconds = seconds;
+      await api(`/rotor/session/${encodeURIComponent(sessionId)}/feedback`, {
+        method: 'POST', json: { event, ...(batchId ? { batchId } : {}) },
       });
       return true;
     },

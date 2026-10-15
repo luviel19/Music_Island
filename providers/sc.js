@@ -125,7 +125,12 @@ module.exports = function createSoundCloud(ctx) {
     logout: () => { d().token = null; d().uid = null; ctx.save(); return true; },
 
     // режимы: trend | likes | link
-    load: async ({ mode }) => {
+    load: async ({ mode, tag }) => {
+      // тренды с настройкой: жанровые чарты SoundCloud больше не наполняются, поэтому — поиск по тегу
+      if (mode === 'trend' && tag) {
+        const j = await api('/search/tracks', { query: { q: '*', 'filter.genre_or_tag': String(tag).slice(0, 40), limit: 40 } });
+        return page(j, (c) => c);
+      }
       if (mode === 'trend') {
         // самый первый ответ после получения ключа приходит без mp3-потоков — повторяем при пустом результате
         for (let attempt = 0; ; attempt++) {

@@ -91,6 +91,8 @@ function setOpen(v) {
 function setSub(v) {
   S.sub = v;
   if (v === 'queue') { T.queue = []; renderQueue(true); P.getQueue(); }
+  if (v === 'eq') renderEq();
+  if (v === 'tune') renderTune();
   applyState();
 }
 
@@ -115,7 +117,7 @@ document.addEventListener('mouseleave', () => setOver(false));
 // ───────────────────── перетаскивание острова ─────────────────────
 let pd = null, justDragged = false;
 island.addEventListener('pointerdown', (e) => {
-  if (e.button !== 0 || S.settings.lockPosition || e.target.closest('button, .bar, .qitem, .list, .sbox, .srow')) return;
+  if (e.button !== 0 || S.settings.lockPosition || e.target.closest('button, .bar, .qitem, .list, .sbox, .srow, .eq-bands, .eq-presets')) return;
   pd = { x: e.screenX, y: e.screenY, moved: false };
   island.setPointerCapture(e.pointerId);
 });
@@ -447,7 +449,15 @@ function renderControls() {
       b.onclick = () => setMode(m.id);
       seg.append(b);
     }
+    if (P.tune) {
+      const b = document.createElement('button');
+      b.className = 'ib'; b.id = 'tuneBtn'; b.dataset.tip = P.tune.tip;
+      b.innerHTML = '<svg><use href="#i-tune"/></svg>';
+      b.onclick = () => setSub('tune');
+      seg.append(b);
+    }
   }
+  $('#tuneBtn')?.classList.toggle('tuned', Object.values(S.settings.tune?.[P.id] || {}).some(Boolean));
   seg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.mode === S.mode));
   $('#pin').classList.toggle('on', S.settings.alwaysOnTop);
   const sh = P.caps.shuffle;
@@ -458,6 +468,7 @@ function renderControls() {
   $('#toQueue').style.display = cp.queue === false ? 'none' : '';
   $('#vol').style.display = cp.volume === false ? 'none' : '';
   seg.style.display = P.modes.length ? '' : 'none';
+  $('#toEq').classList.toggle('on', !!S.settings.eq?.on && cp.eq !== false);
   $('#srcIcon').setAttribute('href', `#${P.icon}`);
   $('#src').dataset.tip = `Источник: ${P.name}`;
   $('#qTitle').textContent = `${P.name} · далее`;
@@ -527,6 +538,7 @@ $('#pin').onclick = () => host.setSetting({ alwaysOnTop: !S.settings.alwaysOnTop
 $('#toQueue').onclick = () => setSub('queue');
 $('#toInfo').onclick = () => setSub('details');
 $('#toSearch').onclick = () => setSub('search');
+$('#toEq').onclick = () => setSub('eq');
 // ───────────────────── выпадающий список источников ─────────────────────
 const menu = $('#menu');
 function renderMenu() {
@@ -657,6 +669,204 @@ async function authAction(kind) {
 $('#login').onclick = () => authAction('primary');
 $('#paste').onclick = () => authAction('secondary');
 
+// ───────────────────── эквалайзер ─────────────────────
+const Fx = window.AudioFx;
+let eqSaveT;
+const eqState = () => Fx.normState(S.settings.eq);
+function eqApply(next, save = true) {
+  S.settings.eq = Fx.normState(next);
+  Fx.set?.(S.settings.eq);
+  renderEqValues();
+  $('#toEq').classList.toggle('on', S.settings.eq.on && P.caps.eq !== false);
+  if (!save) return;
+  clearTimeout(eqSaveT); // пока тянут ползунок, файл настроек не трогаем
+  eqSaveT = setTimeout(() => call('settings:set', { eq: S.settings.eq }).catch(() => {}), 500);
+}
+const presetOf = (id) => Fx.PRESETS.find((p) => p.id === id)
+  || (id?.startsWith('c:') && eqState().custom.find((c) => `c:${c.name}` === id));
+function pickPreset(id) {
+  const p = presetOf(id); if (!p) return;
+  eqApply({ ...eqState(), on: true, preset: id, bands: [...p.bands], preamp: p.preamp });
+  renderEqPresets();
+}
+
+function renderEqPresets() {
+  const st = eqState(), box = $('#eqPresets');
+  box.replaceChildren();
+  const chip = (id, name, del) => {
+    const b = document.createElement('button');
+    b.className = 'pchip' + (st.preset === id ? ' sel' : '');
+    b.textContent = name;
+    b.onclick = () => pickPreset(id);
+    if (del) {
+      const x = document.createElement('span');
+      x.className = 'x'; x.dataset.tip = 'Удалить пресет';
+      x.innerHTML = '<svg><use href="#i-close"/></svg>';
+      x.onclick = (e) => {
+        e.stopPropagation();
+        const cur = eqState();
+        eqApply({ ...cur, custom: cur.custom.filter((c) => `c:${c.name}` !== id), preset: cur.preset === id ? 'custom' : cur.preset });
+        renderEqPresets();
+      };
+      b.append(x);
+    }
+    box.append(b);
+  };
+  if (st.preset === 'custom') chip('custom', 'Свой');
+  for (const p of Fx.PRESETS) chip(p.id, p.name);
+  for (const c of st.custom) chip(`c:${c.name}`, c.name, true);
+  const add = document.createElement('button');
+  add.className = 'pchip add'; add.dataset.tip = 'Сохранить как пресет';
+  add.innerHTML = '<svg><use href="#i-plus"/></svg>';
+  add.onclick = () => askPresetName(add);
+  box.append(add);
+}
+// имя нового пресета: на время ввода окно берёт фокус (обычно остров его не забирает)
+function askPresetName(addBtn) {
+  const inp = document.createElement('input');
+  inp.className = 'pname'; inp.maxLength = 24; inp.placeholder = 'Название пресета';
+  addBtn.replaceWith(inp);
+  inp.scrollIntoView({ inline: 'end' });
+  S.busy = true;
+  bridge.send('win:focusable', true);
+  setTimeout(() => inp.focus(), 60);
+  let done = false;
+  const finish = (ok) => {
+    if (done) return; done = true;
+    S.busy = false;
+    bridge.send('win:focusable', false);
+    const name = inp.value.trim();
+    if (ok && name) {
+      const cur = eqState();
+      const custom = [...cur.custom.filter((c) => c.name !== name), { name, bands: cur.bands, preamp: cur.preamp }];
+      eqApply({ ...cur, custom, preset: `c:${name}` });
+    }
+    renderEqPresets();
+    evalOver(lastMouse.x, lastMouse.y);
+  };
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') finish(true); else if (e.key === 'Escape') finish(false); });
+  inp.addEventListener('blur', () => finish(true));
+}
+
+const eqKnobs = [];
+function buildEqBands() {
+  const box = $('#eqBands');
+  Fx.FREQS.forEach((f, i) => {
+    const col = document.createElement('div'); col.className = 'eqb';
+    col.innerHTML = '<span class="v"></span><div class="track"><div class="fill"></div><b class="knob"></b></div><span class="f"></span>';
+    col.querySelector('.f').textContent = Fx.label(f);
+    const tr = col.querySelector('.track');
+    const fromY = (e) => {
+      const r = tr.getBoundingClientRect();
+      const k = 1 - 2 * Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)); // верх +1, низ −1
+      const bands = [...eqState().bands];
+      bands[i] = Fx.clampDb(k * Fx.MAX_DB);
+      eqApply({ ...eqState(), on: true, preset: 'custom', bands });
+    };
+    tr.addEventListener('pointerdown', (e) => {
+      S.busy = true; tr.classList.add('drag'); tr.setPointerCapture(e.pointerId); fromY(e);
+      renderEqPresets(); // появляется чип «Свой»
+    });
+    tr.addEventListener('pointermove', (e) => { if (tr.hasPointerCapture(e.pointerId)) fromY(e); });
+    tr.addEventListener('pointerup', (e) => { S.busy = false; tr.classList.remove('drag'); evalOver(e.clientX, e.clientY); });
+    tr.addEventListener('dblclick', () => {
+      const bands = [...eqState().bands]; bands[i] = 0;
+      eqApply({ ...eqState(), preset: 'custom', bands }); renderEqPresets();
+    });
+    eqKnobs.push({ v: col.querySelector('.v'), fill: col.querySelector('.fill'), knob: col.querySelector('.knob') });
+    box.append(col);
+  });
+  const pre = $('#eqPre');
+  const preFrom = (e) => {
+    const r = pre.getBoundingClientRect();
+    const k = 2 * Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) - 1;
+    eqApply({ ...eqState(), on: true, preamp: Fx.clampDb(k * Fx.MAX_DB) });
+  };
+  pre.addEventListener('pointerdown', (e) => { S.busy = true; pre.setPointerCapture(e.pointerId); preFrom(e); });
+  pre.addEventListener('pointermove', (e) => { if (pre.hasPointerCapture(e.pointerId)) preFrom(e); });
+  pre.addEventListener('pointerup', (e) => { S.busy = false; evalOver(e.clientX, e.clientY); });
+  pre.addEventListener('dblclick', () => eqApply({ ...eqState(), preamp: 0 }));
+}
+const dbText = (v) => `${v > 0 ? '+' : ''}${String(v).replace('.', ',')}`;
+function renderEqValues() {
+  const st = eqState();
+  eqKnobs.forEach((k, i) => {
+    const v = st.bands[i], pos = 50 - (v / Fx.MAX_DB) * 50; // % сверху
+    k.v.textContent = dbText(v);
+    k.knob.style.top = `${pos}%`;
+    k.fill.style.top = `${Math.min(pos, 50)}%`;
+    k.fill.style.height = `${Math.abs(pos - 50)}%`;
+  });
+  const pp = 50 + (st.preamp / Fx.MAX_DB) * 50;
+  $('#eqPreKnob').style.left = `${pp}%`;
+  $('#eqPreFill').style.left = `${Math.min(pp, 50)}%`;
+  $('#eqPreFill').style.width = `${Math.abs(pp - 50)}%`;
+  $('#eqPreV').textContent = `${dbText(st.preamp)} дБ`;
+  $('#eqOn').classList.toggle('on', st.on);
+  $('.l-eq').classList.toggle('disabled', !st.on);
+}
+function renderEq() {
+  const na = P.caps.eq === false;
+  $('.l-eq').classList.toggle('na', na);
+  $('#eqNote').textContent = na
+    ? `${P.name}: звук играет ${P.id === 'yt' ? 'плеер YouTube' : 'другое приложение'}, эквалайзер острова к нему не подключить. Он работает в Яндекс Музыке и SoundCloud.`
+    : '';
+  renderEqPresets(); renderEqValues();
+}
+$('#eqOn').onclick = () => eqApply({ ...eqState(), on: !eqState().on });
+$('#eqReset').onclick = () => pickPreset('flat');
+buildEqBands();
+
+// ───────────────────── настройка волны ─────────────────────
+let tuneGroups = null, tuneFor = null, tuneRestartT;
+async function renderTune() {
+  const body = $('#tuneBody');
+  if (!P.tune) { setSub('expanded'); return; }
+  $('#tuneTitle').textContent = P.tune.title;
+  if (tuneFor !== P.id) {
+    tuneFor = P.id; tuneGroups = null;
+    body.innerHTML = '<div class="empty">Загрузка…</div>';
+    const pid = P.id;
+    try {
+      const g = await P.tune.groups(host);
+      if (P.id !== pid) return;
+      tuneGroups = g;
+    } catch (e) {
+      tuneFor = null;
+      body.innerHTML = '<div class="empty"></div>';
+      body.firstChild.textContent = e.message === 'auth' ? 'Нужен вход' : `Не удалось загрузить: ${e.message}`;
+      return;
+    }
+  }
+  if (!tuneGroups) return; // ещё грузится
+  const val = S.settings.tune?.[P.id] || {};
+  body.replaceChildren();
+  for (const g of tuneGroups) {
+    const box = document.createElement('div'); box.className = 'tgroup';
+    const h = document.createElement('h4'); h.textContent = g.label;
+    const chips = document.createElement('div'); chips.className = 'tchips';
+    for (const o of g.options) {
+      const b = document.createElement('button');
+      b.className = 'pchip' + ((val[g.id] || '') === o.id ? ' sel' : '');
+      b.textContent = o.label;
+      b.onclick = () => setTune(g.id, o.id);
+      chips.append(b);
+    }
+    box.append(h, chips); body.append(box);
+  }
+}
+// выбор сохраняем сразу, а волну перезапускаем чуть позже: можно успеть выбрать несколько пунктов
+function setTune(group, id) {
+  const tune = { ...(S.settings.tune || {}) };
+  tune[P.id] = { ...(tune[P.id] || {}), [group]: id };
+  S.settings.tune = tune;
+  call('settings:set', { tune }).catch(() => {});
+  renderTune(); renderControls();
+  clearTimeout(tuneRestartT);
+  const p = P;
+  tuneRestartT = setTimeout(() => { if (P === p && !T.authNeeded) setMode(p.tune.mode); }, 700);
+}
+
 // ───────────────────── смена источника ─────────────────────
 async function startActive() {
   const id = P.id;
@@ -724,6 +934,7 @@ bridge.on('cmd', (c) => {
   S.source = S.settings.source === 'sp' ? 'media' : S.settings.source; // Spotify API отключён
   P = Providers.get(S.source) || Providers.list[0];
   S.mode = P.modes.some((m) => m.id === S.settings.mode) ? S.settings.mode : P.modes[0]?.id ?? '';
+  Fx.set?.(eqState());
   renderControls(); renderTrack(); renderPlay(); renderVol(); applyState();
   call('update:get').then((u) => u && showUpdate(u)).catch(() => {});
   await startActive();

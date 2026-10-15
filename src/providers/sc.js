@@ -7,10 +7,18 @@ Providers.register(makeQueueProvider({
     { id: 'link', icon: 'i-link', tip: 'Играть ссылку из буфера' },
   ],
   caps: { shuffle: false },
+  // настроение или жанр для «Трендов»: SoundCloud подбирает треки по тегу
+  tune: {
+    title: 'Настроение трендов', tip: 'Настроение и жанр', mode: 'trend',
+    groups: () => [
+      { id: 'tag', label: 'Настроение', options: [{ id: '', label: 'Любое' }, ...[['chill', 'Спокойное'], ['lofi', 'Lo-fi'], ['workout', 'Тренировка'], ['party', 'Вечеринка'], ['sad', 'Грустное'], ['study', 'Учёба'], ['sleep', 'Сон'], ['love', 'Романтика']].map(([id, label]) => ({ id, label }))] },
+      { id: 'tag', label: 'Жанр', options: [['electronic', 'Электроника'], ['hip-hop', 'Хип-хоп'], ['phonk', 'Фонк'], ['house', 'Хаус'], ['techno', 'Техно'], ['drum & bass', 'Драм-н-бейс'], ['rock', 'Рок'], ['indie', 'Инди'], ['pop', 'Поп'], ['r&b', 'R&B'], ['jazz', 'Джаз'], ['ambient', 'Эмбиент'], ['classical', 'Классика']].map(([id, label]) => ({ id, label })) },
+    ],
+  },
   needsAuth: (mode) => mode === 'likes',
   isAuthed: async (host) => (await host.call('sc:status')).authed,
   async load(host, mode) {
-    const r = await host.call('sc:load', { mode });
+    const r = await host.call('sc:load', { mode, tag: host.settings.tune?.sc?.tag || '' });
     let next = r.next;
     return {
       tracks: r.tracks,

@@ -12,7 +12,7 @@
 ![Platform](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=for-the-badge&logo=windows11&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron-44-47848F?style=for-the-badge&logo=electron&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-ff4d94?style=for-the-badge)
-![Version](https://img.shields.io/badge/version-0.2.7-ffb347?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.2.8-ffb347?style=for-the-badge)
 
 <br>
 
@@ -31,6 +31,8 @@
 | 🎛 **Много площадок в одном окне** | Яндекс Музыка, SoundCloud, YouTube и системный плеер. Переключение через выпадающий список прямо на острове |
 | 🔎 **Поиск по всем площадкам** | Введите название песни: остров ищет сразу в Яндекс Музыке, SoundCloud и YouTube, склеивает одну песню в одну строку и показывает значки площадок, где она нашлась. Клик по значку включает песню именно там. Плашки площадок над результатами работают как фильтр |
 | 🔔 **Уведомление об обновлении** | Когда на GitHub выходит новый релиз, остров показывает уведомление с кнопкой «Скачать» |
+| 🎛 **Эквалайзер** | 10 полос (31 Гц – 16 кГц), предусилитель, пресеты «Бас», «Рок», «Вокал» и другие, свои пресеты. Работает в Яндекс Музыке и SoundCloud |
+| ✨ **Настройка волны** | Яндекс Музыка: занятие, характер, настроение и язык «Моей волны». YouTube: настроения и жанры YouTube Music. SoundCloud: тренды по настроению или жанру |
 | 🌊 **Волновой прогресс-бар** | Палочки, повторяющие форму песни. Клик по волне перематывает |
 | 🟪 **Светодиодный эквалайзер** | На фоне острова играет сетка из квадратиков в цвет обложки трека |
 | 🎚 **Компактный эквалайзер** | Живой градиентный индикатор, когда остров свёрнут |
@@ -47,9 +49,9 @@
 
 | Площадка | Что есть | Вход |
 |---|---|---|
-| <img src="https://img.shields.io/badge/-Яндекс%20Музыка-FFDB4D?style=flat-square&logoColor=black" /> | «Моя волна», «Избранное», лайки | OAuth-токен |
-| <img src="https://img.shields.io/badge/-SoundCloud-FF5500?style=flat-square&logo=soundcloud&logoColor=white" /> | Тренды, ваши лайки, трек по ссылке | Необязателен, нужен для лайков |
-| <img src="https://img.shields.io/badge/-YouTube-FF0000?style=flat-square&logo=youtube&logoColor=white" /> | Поиск, микс по ссылке на видео | Не нужен |
+| <img src="https://img.shields.io/badge/-Яндекс%20Музыка-FFDB4D?style=flat-square&logoColor=black" /> | «Моя волна» с настройкой, «Избранное», лайки | OAuth-токен |
+| <img src="https://img.shields.io/badge/-SoundCloud-FF5500?style=flat-square&logo=soundcloud&logoColor=white" /> | Тренды по настроению и жанру, ваши лайки, трек по ссылке | Необязателен, нужен для лайков |
+| <img src="https://img.shields.io/badge/-YouTube-FF0000?style=flat-square&logo=youtube&logoColor=white" /> | Поиск, настроения и жанры, микс по ссылке на видео | Не нужен |
 | <img src="https://img.shields.io/badge/-Системный%20плеер-7B61FF?style=flat-square&logoColor=white" /> | Всё, что играет в Windows: Spotify в браузере или приложении, VK, Apple Music и другое | Не нужен |
 
 > **Про Spotify.** Официальный Web API требует Premium у владельца приложения, поэтому напрямую он не подключён.
@@ -116,7 +118,9 @@ src/providers/<id>.js    интерфейс: воспроизведение, о�
 ├── src/                  интерфейс острова
 │   ├── app.js            ядро: состояния, эквалайзеры, волна, меню
 │   ├── search.js         поиск по площадкам и склейка результатов
+│   ├── audio-fx.js       эквалайзер на Web Audio: полосы, пресеты
 │   └── providers/        провайдеры интерфейса
+├── tests/                проверки логики (npm test)
 └── assets/               иконки и скриншоты
 ```
 

@@ -31,6 +31,8 @@ const S = {
   x: null, y: null,
   alwaysOnTop: true, hoverExpand: true, lockPosition: false, autoStart: false,
   source: 'ym', mode: 'wave', shuffle: false,
+  eq: null, // эквалайзер: { on, preset, bands[10], preamp, custom[] } (проверяет src/audio-fx.js)
+  tune: {}, // настройка волны по площадкам: { ym: { группа: значение }, … }
   providers: {}, // приватные данные провайдеров (токены и т.п.)
 };
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
@@ -48,8 +50,10 @@ function saveSettings() {
 }
 const publicSettings = () => ({
   alwaysOnTop: S.alwaysOnTop, hoverExpand: S.hoverExpand, lockPosition: S.lockPosition,
-  source: S.source, mode: S.mode, shuffle: S.shuffle,
+  source: S.source, mode: S.mode, shuffle: S.shuffle, eq: S.eq, tune: S.tune || {},
 });
+// эти ключи меняют только то, что внутри окна: сохраняем без перестройки трея и окна
+const QUIET_KEYS = ['eq', 'tune'];
 
 // ───────────────────────── провайдеры ─────────────────────────
 const enc = (v) => (!v ? null : safeStorage.isEncryptionAvailable() ? 'enc:' + safeStorage.encryptString(v).toString('base64') : v);
@@ -156,10 +160,11 @@ for (const p of providers) {
 
 handle('settings:get', () => publicSettings());
 handle('settings:set', (patch) => {
-  for (const k of ['alwaysOnTop', 'hoverExpand', 'lockPosition', 'source', 'mode', 'shuffle']) {
+  for (const k of ['alwaysOnTop', 'hoverExpand', 'lockPosition', 'source', 'mode', 'shuffle', ...QUIET_KEYS]) {
     if (k in patch) S[k] = patch[k];
   }
-  applySettings();
+  if (Object.keys(patch).every((k) => QUIET_KEYS.includes(k))) saveSettings();
+  else applySettings();
   return publicSettings();
 });
 handle('update:get', () => updater.latest);
@@ -265,8 +270,20 @@ function buildMenu() {
   ]);
 }
 
+// Эквалайзер (Web Audio) подключает <audio> с crossOrigin. Со страницы file:// Chromium сейчас пускает
+// звук и без CORS, но если сочтёт поток чужим — будет тишина. Страхуемся: дописываем заголовок медиа-ответам.
+function allowMediaCors() {
+  session.defaultSession.webRequest.onHeadersReceived({ urls: ['https://*/*'] }, (d, cb) => {
+    if (d.resourceType !== 'media') return cb({});
+    const h = d.responseHeaders || {};
+    if (Object.keys(h).some((k) => k.toLowerCase() === 'access-control-allow-origin')) return cb({});
+    cb({ responseHeaders: { ...h, 'Access-Control-Allow-Origin': ['*'] } });
+  });
+}
+
 app.whenReady().then(() => {
   loadSettings();
+  allowMediaCors();
   applyProxy().catch(() => {});
   createWindow();
 

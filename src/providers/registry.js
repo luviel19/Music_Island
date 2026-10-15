@@ -2,7 +2,11 @@
 //
 //   id, name, icon          — идентификатор, название, символ из <svg> спрайта (#i-…)
 //   modes: [{ id, icon, tip }]   (пустой список — переключателя режимов нет)
-//   caps: { shuffle: true | 'fav' | false, like?: false, queue?: false, volume?: false }  (по умолчанию всё есть)
+//   caps: { shuffle: true | 'fav' | false, like?: false, queue?: false, volume?: false, eq?: false }  (по умолчанию всё есть;
+//          eq: false — звук играет не наш <audio>, эквалайзер к нему не подключить)
+//   tune?: { title, tip, mode, groups(host) -> [{ id, label, options: [{ id, label }] }] }
+//          экран «Настроить»: выбор хранится в settings.tune[id] как { группа: id варианта } ('' — любое);
+//          после выбора ядро перезапускает режим tune.mode. Группы с одинаковым id — один общий выбор.
 //   async start(host, mode) -> 'ok' | 'auth'     запуск при выборе источника
 //   stop()                                        остановка при переключении
 //   setMode(mode, autoplay)

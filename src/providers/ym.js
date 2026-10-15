@@ -2,14 +2,18 @@
 Providers.register((() => {
   const audio = new Audio();
   audio.preload = 'auto';
+  window.AudioFx?.attach?.(audio);
 
   let host = null, active = false;
   const Q = {
     queue: [], idx: -1, batchId: null, status: '',
     favIds: [], favLoaded: 0, liked: new Set(),
     loadSeq: 0, playSeq: 0, loadedId: null, errStreak: 0, loadingMore: false,
-    mode: 'wave', base: 0,
+    mode: 'wave', base: 0, session: null, // session — id сессии волны с настройками
   };
+  // настройка волны: { группа: сид } из настроек приложения; пусто — обычная «Моя волна»
+  const tuneValue = () => host.settings.tune?.ym || {};
+  const tuned = () => Object.values(tuneValue()).some(Boolean);
   const cur = () => Q.queue[Q.idx];
   const quiet = (p) => p.catch(() => {});
   const shuffleArr = (a) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -37,12 +41,19 @@ Providers.register((() => {
     audio.pause(); audio.removeAttribute('src');
     host.setPlaying(false); publish();
     try {
-      if (mode === 'wave') {
+      if (mode === 'wave' && tuned()) {
+        const r = await host.call('ym:tunedWave', { value: tuneValue() });
+        if (seq !== Q.loadSeq) return;
+        Q.session = r.sessionId; Q.batchId = r.batchId;
+        Q.queue = r.tracks.filter((t) => t.available);
+        feedback('radioStarted');
+        refreshLikes();
+      } else if (mode === 'wave') {
         const r = await host.call('ym:wave');
         if (seq !== Q.loadSeq) return;
-        Q.batchId = r.batchId;
+        Q.session = null; Q.batchId = r.batchId;
         Q.queue = r.tracks.filter((t) => t.available);
-        quiet(host.call('ym:feedback', { type: 'radioStarted' }));
+        feedback('radioStarted');
         refreshLikes();
       } else {
         const ids = await refreshLikes();
@@ -80,7 +91,9 @@ Providers.register((() => {
       if (Q.mode === 'wave' && Q.queue.length - Q.idx <= 3) {
         Q.loadingMore = true;
         const last = Q.queue[Q.queue.length - 1];
-        const r = await host.call('ym:wave', last?.id);
+        const r = Q.session
+          ? await host.call('ym:tunedMore', { sessionId: Q.session, queue: Q.queue.slice(-20).map((t) => t.id) })
+          : await host.call('ym:wave', last?.id);
         if (seq !== Q.loadSeq) return;
         Q.batchId = r.batchId;
         const have = new Set(Q.queue.map((t) => t.id));
@@ -113,7 +126,7 @@ Providers.register((() => {
       if (seq !== Q.playSeq) return;
       audio.src = url; Q.loadedId = t.id;
       await audio.play();
-      if (Q.mode === 'wave') quiet(host.call('ym:feedback', { type: 'trackStarted', trackId: t.id, batchId: Q.batchId }));
+      if (Q.mode === 'wave') feedback('trackStarted', { trackId: t.id });
     } catch (e) {
       if (seq !== Q.playSeq || e.message === 'auth') return;
       if (++Q.errStreak < 4) next(false);
@@ -125,7 +138,12 @@ Providers.register((() => {
   function feedbackLeave(type) {
     const t = cur();
     if (Q.mode !== 'wave' || !t || Q.loadedId !== t.id) return;
-    quiet(host.call('ym:feedback', { type, trackId: t.id, seconds: audio.currentTime, batchId: Q.batchId }));
+    feedback(type, { trackId: t.id, seconds: audio.currentTime });
+  }
+  // обратная связь волне: в сессию с настройками или в обычную станцию
+  function feedback(type, extra = {}) {
+    const ev = { type, batchId: Q.batchId, ...extra };
+    quiet(Q.session ? host.call('ym:tunedFeedback', { sessionId: Q.session, ...ev }) : host.call('ym:feedback', ev));
   }
 
   function next(user = true) {
@@ -154,6 +172,13 @@ Providers.register((() => {
     icon: 'i-ym',
     modes: [{ id: 'wave', icon: 'i-wave', tip: 'Моя волна' }, { id: 'fav', icon: 'i-heart', tip: 'Избранное' }],
     caps: { shuffle: 'fav' },
+    // экран «Настроить волну»: группы из API Яндекса, выбор применяется к «Моей волне»
+    tune: {
+      title: 'Настроить Мою волну',
+      tip: 'Настроить волну',
+      mode: 'wave',
+      groups: () => host.call('ym:waveSettings'),
+    },
 
     async start(h, mode) {
       host = h; active = true;
@@ -206,7 +231,7 @@ Providers.register((() => {
       on ? Q.liked.add(t.id) : Q.liked.delete(t.id);
       try {
         await host.call('ym:like', { id: t.id, like: on });
-        if (Q.mode === 'wave') quiet(host.call('ym:feedback', { type: on ? 'like' : 'unlike', trackId: t.id, batchId: Q.batchId }));
+        if (Q.mode === 'wave') feedback(on ? 'like' : 'unlike', { trackId: t.id });
       } catch (e) { on ? Q.liked.delete(t.id) : Q.liked.add(t.id); throw e; }
     },
     async toggleShuffle() {

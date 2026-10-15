@@ -1,7 +1,7 @@
 // Общая логика провайдеров с очередью треков (SoundCloud, YouTube, Звук): очередь, переходы,
 // догрузка, лайки, ошибки. Конкретный сервис задаёт только cfg, воспроизведение — engine.
 //
-// cfg: { id, name, hint, icon, modes, caps, search?(host, q) -> tracks, related?(host, track) -> tracks,
+// cfg: { id, name, hint, icon, modes, caps, tune?, search?(host, q) -> tracks, related?(host, track) -> tracks,
 //        needsAuth(mode) -> bool, isAuthed(host) -> Promise<bool>,
 //        load(host, mode) -> Promise<{ tracks, more?: (queue) => Promise<tracks> }>,
 //        like?(host, track, on), trackUrl(track), authView(), authAction(kind, host),
@@ -13,6 +13,7 @@
 window.audioEngine = (resolveUrl) => {
   const audio = new Audio();
   audio.preload = 'auto';
+  window.AudioFx?.attach?.(audio);
   let cb = null, on = false, volume = 0.7;
   audio.addEventListener('playing', () => on && cb.playing(true));
   audio.addEventListener('pause', () => on && cb.playing(false));
@@ -162,7 +163,7 @@ window.makeQueueProvider = (cfg) => {
   };
 
   return {
-    id: cfg.id, name: cfg.name, hint: cfg.hint, icon: cfg.icon, modes: cfg.modes, caps: cfg.caps,
+    id: cfg.id, name: cfg.name, hint: cfg.hint, icon: cfg.icon, modes: cfg.modes, caps: cfg.caps, tune: cfg.tune,
 
     async start(h, mode) {
       host = h; active = true;
