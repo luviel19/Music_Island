@@ -66,6 +66,9 @@ const ctx = {
   save: saveSettings,
   enc, dec, clipboard, readClip: async () => String((await clipboard.readText()) || ''), shell, session, BrowserWindow,
   fetch: (u, o) => net.fetch(u, o), // идёт через сессию Electron, поэтому учитывает прокси
+  app, screen, root: __dirname,
+  getWindow: () => win,
+  provider: (id) => providers.find((p) => p.id === id),
 };
 const providers = require('./providers')(ctx);
 const updater = require('./updater')((info) => { win?.webContents.send('update', info); tray?.setContextMenu(buildMenu()); });
@@ -266,6 +269,7 @@ function buildMenu() {
     { label: 'Вернуть в центр экрана', click: () => { const p = defaultPosition(); win.setPosition(p.x, p.y); S.x = p.x; S.y = p.y; saveSettings(); } },
     { type: 'separator' },
     ...providers.map((p) => ({ label: `Выйти из ${p.name}`, click: () => { p.handlers.logout(); send(`logout:${p.id}`); } })),
+    { label: 'Spotify: скопировать диагностику', click: () => clipboard.writeText(JSON.stringify(providers.find((p) => p.id === 'sp').handlers.diag(), null, 2)) },
     { label: 'Закрыть', click: () => app.quit() },
   ]);
 }

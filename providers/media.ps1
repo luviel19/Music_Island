@@ -48,9 +48,51 @@ $script:lastKey = $null
 $script:needThumb = $false
 $script:thumbTries = 0
 
+# App filter (embedded Spotify web player). Rules, so that foreign players are never captured:
+#  1) a session with our own unique AppUserModelId (filter) is taken as is;
+#  2) otherwise only a fallback-app session (any WebView2 host) whose track title is contained in the page title
+#     (hint) is taken, and it is remembered (sticky) so that a paused track stays controllable;
+#  3) anything else - no session at all.
+$script:filter = ''
+$script:fallback = ''
+$script:hint = ''
+$script:own = $false
+$script:sticky = ''
+$script:selNote = ''
+function Get-Key($s) {
+    $p = Await ($s.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
+    if (-not $p) { return @{ key = ''; title = '' } }
+    return @{ key = ([string]$s.SourceAppUserModelId) + '|' + $p.Title + '|' + $p.Artist; title = [string]$p.Title }
+}
+function Get-Session {
+    if (-not $script:filter) { return $mgr.GetCurrentSession() }
+    $all = @($mgr.GetSessions())
+    $own = @($all | Where-Object { ([string]$_.SourceAppUserModelId) -eq $script:filter })
+    if ($own.Count -gt 0) {
+        $script:selNote = 'own:' + $own.Count
+        $pl = $own | Where-Object { $_.GetPlaybackInfo().PlaybackStatus.ToString() -eq 'Playing' } | Select-Object -First 1
+        if ($pl) { return $pl }
+        return $own | Select-Object -First 1
+    }
+    if (-not $script:fallback) { $script:selNote = 'none'; return $null }
+    $cand = @($all | Where-Object { ([string]$_.SourceAppUserModelId) -like ('*' + $script:fallback + '*') })
+    $script:selNote = 'fallback:' + $cand.Count
+    # exactly one WebView2 session while our own player has live audio: that session is ours
+    if ($script:own -and $cand.Count -eq 1) { $k1 = Get-Key $cand[0]; $script:sticky = $k1.key; return $cand[0] }
+    foreach ($s in $cand) {
+        $k = Get-Key $s
+        if ($k.title -and $script:hint -and $script:hint.Contains($k.title)) { $script:sticky = $k.key; return $s }
+    }
+    if ($script:sticky) {
+        foreach ($s in $cand) { if ((Get-Key $s).key -eq $script:sticky) { return $s } }
+    }
+    $script:selNote = 'ambiguous:' + $cand.Count
+    return $null
+}
+
 function Get-State {
-    $s = $mgr.GetCurrentSession()
-    if (-not $s) { return @{ active = $false } }
+    $s = Get-Session
+    if (-not $s) { return @{ active = $false; note = $script:selNote } }
     $props = Await ($s.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
     if (-not $props -or -not $props.Title) { return @{ active = $false } }
     $playing = ($s.GetPlaybackInfo().PlaybackStatus.ToString() -eq 'Playing')
@@ -67,7 +109,8 @@ function Get-State {
         if ($app -eq 'App') { $app = ($matches[1] -split '\.')[-1] }
     } else { $app = $id -replace '\.exe$', '' }
     $o = [ordered]@{
-        active = $true; app = $app; title = $props.Title; artist = $props.Artist; album = $props.AlbumTitle
+        note = $script:selNote; aumid = $id; active = $true; app = $app; title = $props.Title; artist = $props.Artist; album = $props.AlbumTitle
+        shuffle = $s.GetPlaybackInfo().IsShuffleActive; repeat = [string]$s.GetPlaybackInfo().AutoRepeatMode
         playing = $playing; posMs = [math]::Round($pos); durMs = [math]::Round($dur)
     }
     $key = "$($s.SourceAppUserModelId)|$($props.Title)|$($props.Artist)"
@@ -85,7 +128,10 @@ function Get-State {
 }
 
 function Invoke-Cmd($c) {
-    $s = $mgr.GetCurrentSession()
+    if ($c.type -eq 'filter') { $script:filter = [string]$c.value; $script:fallback = [string]$c.fallback; $script:sticky = ''; $script:lastKey = $null; return }
+    if ($c.type -eq 'hint') { $script:hint = [string]$c.value; return }
+    if ($c.type -eq 'own') { $script:own = [bool]$c.value; return }
+    $s = Get-Session
     if (-not $s) { return }
     switch ($c.type) {
         'toggle' { [void](Await ($s.TryTogglePlayPauseAsync()) ([bool])) }

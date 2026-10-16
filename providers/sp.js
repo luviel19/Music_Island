@@ -1,169 +1,220 @@
-// Spotify Web API: остров управляет проигрыванием в приложении Spotify (нужен Premium).
-// Вход — OAuth PKCE. Пока приложение Spotify в режиме Development, пускает только добавленных
-// пользователей, а у владельца Client ID должна быть активная подписка Premium.
-const crypto = require('crypto');
+// Spotify: официальный веб-плеер open.spotify.com внутри острова на Microsoft Edge WebView2.
+// Нужен только WebView2 Runtime (есть в Windows 10/11). Web API, Client ID и Premium не нужны: человек входит
+// на настоящей странице Spotify, а профиль (cookie) хранит сам WebView2 в папке пользователя.
+// Страница живёт в отдельном процессе native/spotify-host (SpotifyHost.exe): окно без рамки,
+// принадлежащее окну острова. Название, обложку и прогресс берём из медиа-контроля Windows (SMTC),
+// кнопки острова нажимают системные медиа-команды. В страницу Spotify ничего не внедряется.
+const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
-// Client ID приложения Spotify (developer.spotify.com). Если пусто — каждый вставляет свой.
-const BUILTIN_CLIENT_ID = '531d37fcc425477a857b655424e8c9b1';
-const REDIRECT = 'http://127.0.0.1:53682/callback';
-const SCOPES = 'user-read-playback-state user-modify-playback-state user-library-read user-library-modify';
+const PANEL_W = 760, PANEL_H = 640, TOP_GAP = 236; // панель под островом (самая высокая форма входа — 226)
 
 module.exports = function createSpotify(ctx) {
-  const d = () => ctx.data('sp');
-  const cid = () => BUILTIN_CLIENT_ID || d().clientId;
-  let access = null, expires = 0;
+  let proc = null, buf = '', ready = false, visible = false, authed = null, title = '', error = '';
+  let pids = {}, lastHint = null, lastMedia = null, volume = null, ownAudio = false;
+  const PAGES = { home: 'https://open.spotify.com/', tracks: 'https://open.spotify.com/collection/tracks', playlists: 'https://open.spotify.com/collection/playlists', queue: 'https://open.spotify.com/queue' };
+  let pageUrl = '', preloaded = false;
+  const events = []; // кольцевой журнал: только имена событий и ошибки, без cookie, токенов и данных аккаунта
+  const log = (m) => { events.push(`${new Date().toISOString().slice(11, 19)} ${m}`); if (events.length > 40) events.shift(); };
 
-  async function tokenReq(params) {
-    const r = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ client_id: cid(), ...params }),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(j.error_description || j.error || 'Ошибка авторизации');
-    access = j.access_token;
-    expires = Date.now() + (j.expires_in - 60) * 1000;
-    if (j.refresh_token) { d().refresh = ctx.enc(j.refresh_token); ctx.save(); }
+  const exe = () => path.join(
+    ctx.app.isPackaged ? process.resourcesPath : ctx.root,
+    'bin', 'spotify-host', 'SpotifyHost.exe',
+  );
+  const profileDir = () => path.join(ctx.app.getPath('userData'), 'spotify-profile');
+  const available = () => process.platform === 'win32' && fs.existsSync(exe());
+  const send = (o) => { try { proc?.stdin.write(JSON.stringify(o) + '\n'); } catch { /* процесс уже закрыт */ } };
+  const media = () => ctx.provider('media').handlers;
+
+  function onEvent(o) {
+    if (o.ev !== 'title' && o.ev !== 'url' && o.ev !== 'loaded') log(o.ev === 'error' ? `error ${o.msg}` : o.ev === 'auth' ? `auth ${o.authed}` : o.ev);
+    if (o.ev === 'ready') {
+      ready = true; error = ''; pids = { helper: o.pid, webview2: o.browserPid };
+      const v = ctx.data('sp').volume;
+      if (typeof v === 'number') send({ cmd: 'volume', v }); // громкость запоминается между запусками
+    }
+    else if (o.ev === 'auth') {
+      authed = !!o.authed;
+      if (authed && !visible && !preloaded) { preloaded = true; send({ cmd: 'nav', url: PAGES.tracks }); } // «Моя музыка» потом срабатывает сразу
+    }
+    else if (o.ev === 'url') pageUrl = String(o.url || '');
+    else if (o.ev === 'volume') volume = o.v;
+    else if (o.ev === 'loaded') loadedWaiters.splice(0).forEach((f) => f());
+    else if (o.ev === 'queue') queueWaiters.splice(0).forEach((f) => f(o));
+    else if (o.ev === 'audiodbg') {
+      log('audio ' + o.d);
+      const own = Number(String(o.d).split('|')[2]) > 0; // у нашего процесса есть звуковая сессия Windows
+      if (own !== ownAudio) { ownAudio = own; media().cmd({ type: 'own', value: own }); }
+    }
+    else if (o.ev === 'loggedout') authed = false;
+    else if (o.ev === 'title') title = String(o.title || '');
+    else if (o.ev === 'hidden') visible = false;
+    else if (o.ev === 'shown') visible = true;
+    else if (o.ev === 'error') error = o.msg === 'noruntime' ? 'noruntime' : String(o.msg || 'Ошибка веб-плеера');
   }
 
-  async function ensureToken() {
-    if (access && Date.now() < expires) return;
-    const rt = ctx.dec(d().refresh);
-    if (!rt || !cid()) throw new Error('auth');
-    try { await tokenReq({ grant_type: 'refresh_token', refresh_token: rt }); } catch { throw new Error('auth'); }
-  }
-
-  async function api(pathname, { method = 'GET', query, json } = {}) {
-    await ensureToken();
-    const url = new URL('https://api.spotify.com/v1' + pathname);
-    for (const [k, v] of Object.entries(query || {})) url.searchParams.set(k, v);
-    const res = await fetch(url, {
-      method,
-      headers: { Authorization: `Bearer ${access}`, ...(json ? { 'Content-Type': 'application/json' } : {}) },
-      body: json ? JSON.stringify(json) : undefined,
-    });
-    if (res.status === 401) { access = null; throw new Error('auth'); }
-    if (res.status === 204 || res.status === 202) return null;
-    const text = await res.text();
-    let data = null;
-    try { data = text ? JSON.parse(text) : null; } catch { /* не json */ }
-    if (!res.ok) {
-      const reason = data?.error?.reason;
-      console.error('[sp]', method, pathname, res.status, text.slice(0, 300));
-      if (reason === 'PREMIUM_REQUIRED') throw new Error('premium');
-      if (reason === 'NO_ACTIVE_DEVICE') throw new Error('NO_ACTIVE_DEVICE');
-      if (res.status === 403 && !reason) {
-        const m = data?.error?.message || text.slice(0, 120) || '403';
-        if (/premium subscription required for the owner/i.test(m)) throw new Error('ownerpremium');
-        throw new Error(/register|allowlist|user may not/i.test(m) ? 'notallowed' : `Spotify отказал (403): ${m}`);
+  function launch() {
+    if (proc) return;
+    if (!available()) throw new Error('Не найден модуль веб-плеера Spotify (bin/spotify-host)');
+    const win = ctx.getWindow();
+    const hwnd = win ? win.getNativeWindowHandle().readBigUInt64LE(0).toString() : '0';
+    ready = false; visible = false; authed = null; title = ''; error = ''; buf = ''; pageUrl = ''; preloaded = false;
+    proc = spawn(exe(), ['--owner', hwnd, '--profile', profileDir()], { windowsHide: false });
+    proc.stdout.setEncoding('utf8');
+    proc.stdout.on('data', (chunk) => {
+      buf += chunk;
+      let i;
+      while ((i = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, i).trim();
+        buf = buf.slice(i + 1);
+        if (!line) continue;
+        try { onEvent(JSON.parse(line)); } catch { /* битая строка */ }
       }
-      if (res.status === 429) throw new Error('Слишком много запросов, подождите');
-      throw new Error(reason || data?.error?.message || `HTTP ${res.status}`);
-    }
-    return data;
+    });
+    proc.stderr.on('data', () => {});
+    proc.on('exit', (code) => { log(`exit ${code}`); proc = null; ready = false; visible = false; pids = {}; });
+    proc.on('error', (e) => { log(`spawn error ${e.message}`); proc = null; error = e.message; });
   }
 
-  function norm(t) {
-    const imgs = t.album?.images || [];
-    const img = imgs.find((i) => i.width >= 250 && i.width <= 400) || imgs[0];
-    return {
-      id: t.id, uri: t.uri, title: t.name,
-      artists: (t.artists || []).map((a) => a.name).join(', '),
-      album: t.album?.name || '', year: (t.album?.release_date || '').slice(0, 4), genre: '',
-      cover: img?.url || null, durationMs: t.duration_ms || 0, albumId: null, available: true,
-    };
+  function stop() {
+    if (proc) { send({ cmd: 'quit' }); const p = proc; setTimeout(() => p.kill(), 1500); }
+    proc = null; ready = false; visible = false;
   }
 
-  async function withDevice(fn) {
-    try { return await fn({}); } catch (e) {
-      if (e.message !== 'NO_ACTIVE_DEVICE') throw e;
-      const dv = await api('/me/player/devices');
-      const dev = dv.devices.find((x) => x.is_active) || dv.devices.find((x) => x.type === 'Computer') || dv.devices[0];
-      if (!dev) throw new Error('Откройте Spotify на компьютере');
-      return fn({ device_id: dev.id });
+  // Прямоугольник панели в физических пикселях: под островом по центру окна, а если не влезает — над ним
+  function panelRect() {
+    const win = ctx.getWindow();
+    const b = win.getBounds();
+    const wa = ctx.screen.getDisplayMatching(b).workArea;
+    const w = Math.min(PANEL_W, wa.width), h = Math.min(PANEL_H, wa.height);
+    let x = Math.round(b.x + (b.width - w) / 2);
+    let y = b.y + TOP_GAP;
+    if (y + h > wa.y + wa.height) y = Math.max(wa.y, b.y - h + 10);
+    x = Math.min(Math.max(x, wa.x), wa.x + wa.width - w);
+    return ctx.screen.dipToScreenRect(win, { x, y, width: w, height: h });
+  }
+
+  // «Моя музыка»: открываем «Любимые треки» в фоне и нажимаем на странице зелёную кнопку Play (как пользователь,
+  // но без показа панели). Положение кнопки привязано к вёрстке Spotify, поэтому при неудаче панель открывается сама.
+  const loadedWaiters = [], queueWaiters = [];
+  const waitLoaded = (ms) => new Promise((resolve) => {
+    const t = setTimeout(() => resolve(false), ms);
+    loadedWaiters.push(() => { clearTimeout(t); resolve(true); });
+  });
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const isPlaying = async () => !!(await media().state()).playing;
+  async function playLiked() {
+    if (!ready) return false;
+    const onPage = pageUrl.startsWith(PAGES.tracks); // страница уже открыта (заранее или прошлым нажатием): ждать нечего
+    if (!onPage) {
+      const loaded = waitLoaded(15000);
+      send({ cmd: 'nav', url: PAGES.tracks });
+      if (!(await loaded)) throw new Error('Страница Spotify не загрузилась');
+      await sleep(1200); // страница дорисовывается уже после загрузки
     }
+    for (let i = 0; i < 2; i++) { // второй клик нужен только если до первого уже играло и клик поставил паузу
+      const was = await media().state();
+      send({ cmd: 'click', x: 128, y: 290 });
+      for (let t = 0; t < 14; t++) { // ждём реакции до 7 с: трек может подгружаться, второй клик в это время поставил бы паузу
+        await sleep(500);
+        const now = await media().state();
+        if (now.playing && (!was.playing || now.title !== was.title)) return true; // заиграло или сменился трек
+        if (was.playing && !now.playing) break; // поставило на паузу: нажмём ещё раз
+      }
+      if (!was.playing) break;
+    }
+    handlers.show(); // не вышло: показываем страницу, чтобы нажать Play вручную
+    throw new Error('Не удалось запустить «Любимые треки» сами, нажмите Play на странице');
+  }
+
+  // Очередь: читаем правую панель страницы из дерева доступности (панель сама открывается кнопкой плеера, без перехода по адресу,
+  // чтобы не перезагрузить страницу и не остановить музыку)
+  let queueBusy = null;
+  function readQueue() { // одно чтение за раз: два нажатия кнопки очереди подряд закрыли бы панель
+    if (!queueBusy) queueBusy = readQueueNow().finally(() => { queueBusy = null; });
+    return queueBusy;
+  }
+  async function readQueueNow() {
+    if (!ready) throw new Error('Spotify ещё запускается');
+    for (let attempt = 0; attempt < 1; attempt++) {
+      const got = new Promise((resolve) => {
+        const t = setTimeout(() => resolve(null), 10000);
+        queueWaiters.push((o) => { clearTimeout(t); resolve(o); });
+      });
+      send({ cmd: 'queue' });
+      const o = await got;
+      if (o?.items?.length) return o.items;
+    }
+    return [];
   }
 
   const handlers = {
-    status: async () => {
-      const hasClientId = !!cid();
-      const builtin = !!BUILTIN_CLIENT_ID;
-      if (!hasClientId || !d().refresh) return { hasClientId, builtin, authed: false };
-      try { await ensureToken(); return { hasClientId, builtin, authed: true }; } catch { return { hasClientId, builtin, authed: false }; }
+    // запуск веб-плеера; сам плеер остаётся скрытым, пока он не нужен (вход или просмотр библиотеки)
+    start: () => {
+      launch();
+      media().start();
+      // Сессия нашего плеера: свой AppUserModelId, а если Windows его не применила — только WebView2-сессия, чьё название совпало с заголовком страницы (чужие плееры не берём)
+      media().cmd({ type: 'filter', value: 'MusicIsland.Spotify', fallback: 'msedgewebview2' });
+      lastHint = null; ownAudio = false;
+      return { available: true };
     },
-    clientId: async () => {
-      const id = /[0-9a-f]{32}/i.exec(await ctx.readClip())?.[0];
-      if (!id) throw new Error('В буфере обмена нет Client ID (32 символа)');
-      d().clientId = id; d().refresh = null; access = null; ctx.save();
-      return true;
-    },
-    logout: () => { d().refresh = null; access = null; ctx.save(); return true; },
-
-    login: () => new Promise((resolve, reject) => {
-      if (!cid()) return reject(new Error('Сначала вставьте Client ID'));
-      const verifier = crypto.randomBytes(48).toString('base64url');
-      const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
-      const state = crypto.randomBytes(8).toString('hex');
-      const w = new ctx.BrowserWindow({ width: 480, height: 720, title: 'Вход в Spotify', autoHideMenuBar: true, alwaysOnTop: true });
-      let done = false;
-      const finish = (err) => { if (done) return; done = true; if (!w.isDestroyed()) w.close(); err ? reject(err) : resolve(true); };
-      const onNav = async (e, url) => {
-        if (!url.startsWith(REDIRECT)) return;
-        e?.preventDefault?.();
-        const u = new URL(url);
-        const code = u.searchParams.get('code');
-        if (u.searchParams.get('state') !== state || !code) return finish(new Error(u.searchParams.get('error') || 'Вход отменён'));
-        try { await tokenReq({ grant_type: 'authorization_code', code, redirect_uri: REDIRECT, code_verifier: verifier }); finish(); } catch (er) { finish(er); }
-      };
-      w.webContents.on('will-redirect', onNav);
-      w.webContents.on('will-navigate', onNav);
-      w.on('closed', () => finish(new Error('Окно входа закрыто')));
-      w.loadURL('https://accounts.spotify.com/authorize?' + new URLSearchParams({
-        client_id: cid(), response_type: 'code', redirect_uri: REDIRECT,
-        code_challenge_method: 'S256', code_challenge: challenge, state, scope: SCOPES,
-      }));
-    }),
-
+    stop: () => { stop(); return true; },
     state: async () => {
-      const r = await api('/me/player');
-      if (!r || !r.item || r.item.type !== 'track') return { active: false };
+      const st = { proc: proc ? (ready ? 'ready' : 'starting') : 'off', authed, visible, title, error, volume };
+      if (ready && authed) {
+        if (title !== lastHint) { lastHint = title; media().cmd({ type: 'hint', value: title }); }
+        st.media = lastMedia = await media().state();
+      }
+      return st;
+    },
+    diag: () => {
+      const m = lastMedia || {};
       return {
-        active: true, playing: r.is_playing, progressMs: r.progress_ms || 0,
-        shuffle: r.shuffle_state, volume: r.device?.volume_percent, device: r.device?.name,
-        track: norm(r.item),
+        webview2Runtime: ready ? 'ok' : error === 'noruntime' ? 'missing' : proc ? 'starting' : 'off',
+        pids, authed, panelVisible: visible, pageTitle: title, error,
+        smtc: { note: m.note, aumid: m.aumid, active: m.active, track: m.title ? `${m.artist} - ${m.title}` : '', playing: m.playing },
+        events,
       };
     },
     queue: async () => {
-      const r = await api('/me/player/queue');
-      return (r?.queue || []).filter((t) => t.type === 'track').map(norm);
+      const items = await readQueue();
+      const fresh = await media().state();
+      const m = fresh && fresh.active ? fresh : null;
+      return { items, current: m && { title: m.title, artist: m.artist, cover: m.cover, durMs: m.durMs } };
     },
-    likedUris: async () => {
-      const pages = await Promise.all([0, 50].map((offset) => api('/me/tracks', { query: { limit: 50, offset } })));
-      return pages.flatMap((p) => p.items.map((i) => i.track.uri));
+    queuePlay: ({ n }) => { send({ cmd: 'queueplay', n: +n }); return true; },
+    show: () => { if (!ready) return false; const r = panelRect(); send({ cmd: 'show', x: r.x, y: r.y, w: r.width, h: r.height }); send({ cmd: 'focus' }); return true; },
+    hide: () => { send({ cmd: 'hide' }); return true; },
+    volume: ({ v }) => {
+      v = Math.min(1, Math.max(0, +v || 0));
+      ctx.data('sp').volume = v; ctx.save();
+      send({ cmd: 'volume', v });
+      return true;
     },
-    contains: async (id) => (await api('/me/tracks/contains', { query: { ids: id } }))[0],
-    like: async ({ id, like }) => { await api('/me/tracks', { method: like ? 'PUT' : 'DELETE', query: { ids: id } }); return true; },
-
-    cmd: async ({ type, value, uris }) => {
-      switch (type) {
-        case 'play': return withDevice((q) => api('/me/player/play', { method: 'PUT', query: q }));
-        case 'pause': return api('/me/player/pause', { method: 'PUT' });
-        case 'next': return api('/me/player/next', { method: 'POST' });
-        case 'previous': return api('/me/player/previous', { method: 'POST' });
-        case 'seek': return api('/me/player/seek', { method: 'PUT', query: { position_ms: Math.round(value) } });
-        case 'volume': return api('/me/player/volume', { method: 'PUT', query: { volume_percent: Math.round(value) } });
-        case 'shuffle': return api('/me/player/shuffle', { method: 'PUT', query: { state: !!value } });
-        case 'playUris': return withDevice((q) => api('/me/player/play', { method: 'PUT', query: q, json: { uris: uris.slice(0, 100) } }));
-        default: throw new Error('unknown cmd');
-      }
+    // разделы своей музыки открываются на официальных страницах Spotify в панели
+    nav: async ({ to }) => {
+      if (!PAGES[to]) throw new Error('bad page');
+      if (to === 'tracks') return playLiked();
+      // переход по адресу перезагружает страницу и обрывает музыку: пока что-то играет, просто показываем панель
+      if (ready && (await media().state()).playing) return handlers.show();
+      send({ cmd: 'nav', url: PAGES[to] });
+      return handlers.show();
+    },
+    // поиск: официальная страница поиска Spotify в панели (своего списка результатов у встроенного плеера нет)
+    search: ({ q }) => {
+      const t = String(q || '').trim().slice(0, 100);
+      if (!t) return false;
+      send({ cmd: 'nav', url: 'https://open.spotify.com/search/' + encodeURIComponent(t) });
+      return handlers.show();
+    },
+    home: () => { send({ cmd: 'home' }); return true; },
+    logout: () => {
+      if (proc) send({ cmd: 'logout' });
+      else { try { fs.rmSync(profileDir(), { recursive: true, force: true }); } catch { /* занято */ } authed = false; }
+      return true;
     },
   };
 
-  return {
-    id: 'sp',
-    name: 'Spotify',
-    hosts: ['open.spotify.com', 'developer.spotify.com'],
-    modes: [{ id: 'wave', label: 'Сейчас играет' }, { id: 'fav', label: 'Играть избранное' }],
-    handlers,
-  };
+  return { id: 'sp', name: 'Spotify', hosts: ['open.spotify.com', 'spotify.com'], modes: [], handlers, dispose: stop };
 };

@@ -1,13 +1,14 @@
 {
   "name": "music-island",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "Dynamic Island для музыки: Яндекс Музыка, SoundCloud, YouTube и системный плеер",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win nsis",
+    "dist": "npm run build:spotify && electron-builder --win nsis",
     "pack": "electron-builder --win --dir",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "build:spotify": "powershell -NoProfile -ExecutionPolicy Bypass -File native/spotify-host/build.ps1"
   },
   "license": "MIT",
   "devDependencies": {
@@ -36,7 +37,14 @@
       "package.json"
     ],
     "extraResources": [
-      { "from": "bin/hysteria.exe", "to": "bin/hysteria.exe" }
+      {
+        "from": "bin/hysteria.exe",
+        "to": "bin/hysteria.exe"
+      },
+      {
+        "from": "bin/spotify-host",
+        "to": "bin/spotify-host"
+      }
     ],
     "asarUnpack": [
       "providers/media.ps1"

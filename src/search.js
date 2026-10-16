@@ -152,7 +152,7 @@ const Search = (() => {
     timer = setTimeout(() => run(input.value), 380);
   });
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { clearTimeout(timer); run(input.value); }
+    if (e.key === 'Enter') { clearTimeout(timer); run(input.value); P.searchWeb?.(input.value); } // Spotify: результаты на его странице в панели
     else if (e.key === 'Escape') { e.preventDefault(); setSub('expanded'); }
   });
   $('#sclear').onclick = () => { input.value = ''; box.classList.remove('has'); run(''); input.focus(); };

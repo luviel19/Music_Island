@@ -1,130 +1,168 @@
-// Spotify: остров как пульт к приложению Spotify (Web API, нужен Premium).
+// Spotify: официальный веб-плеер внутри острова (Microsoft Edge WebView2, процесс native/spotify-host).
+// Вход и библиотека — на настоящей странице open.spotify.com в панели под островом. Название, обложка и прогресс
+// приходят из медиа-контроля Windows, команды — системные медиа-клавиши. Лайка, очереди, громкости и
+// собственного поиска у такого способа нет, поэтому в caps они выключены (поиск и библиотека — в самой странице).
+// Обложек у строк очереди страница не отдаёт, поэтому вместо них логотип Spotify
+const SP_LOGO = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#1ed760"/><path d="M6.5 9.3c3.6-1.1 7.6-.8 11 1M7.2 12.6c3-.9 6.2-.6 9 .9M8 15.7c2.4-.7 4.8-.4 6.9.7" fill="none" stroke="#000" stroke-width="1.7" stroke-linecap="round"/></svg>');
 Providers.register((() => {
-  let host = null, active = false, timer = null, busy = false;
-  const sp = { id: null, hold: 0, hasId: false, builtin: false, items: [], idle: false };
+  let host = null, active = false, timer = null, busy = false, panel = false;
+  let qNodes = []; // узлы страницы очереди для кнопок Play (0 — текущий трек)
+  let key = null, hold = 0, idle = false, lastCover = '', status = '';
 
-  const fail = (e) => {
-    if (!e || e.message === 'auth') return;
-    const m = {
-      premium: 'Для управления нужен Spotify Premium',
-      ownerpremium: 'У владельца приложения Spotify нет Premium',
-      notallowed: 'Аккаунт не добавлен в приложение Spotify (User Management)',
-      NO_ACTIVE_DEVICE: 'Откройте Spotify на ПК',
-    }[e.message] || e.message;
-    if (!sp.id) host.setTrack(null, m);
-    host.flash(m);
-  };
-  async function cmd(c) {
-    try { await host.call('sp:cmd', c); } catch (e) { fail(e); }
-    setTimeout(poll, 400);
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const state = () => host.call('sp:state');
+
+  function say(text) {
+    if (text === status) return;
+    status = text;
+    host.setTrack(null, text);
   }
 
   async function poll() {
     if (busy || !active) return;
     busy = true;
-    try { apply(await host.call('sp:state')); } catch (e) { fail(e); } finally { busy = false; }
-  }
-  function apply(st) {
-    if (!active) return;
-    if (!st.active) {
-      if (sp.id || !sp.idle) { sp.id = null; sp.idle = true; host.setPlaying(false); host.setTrack(null, 'Включите музыку в Spotify'); }
-      return;
-    }
-    sp.idle = false;
-    const t = st.track;
-    if (sp.id !== t.id) { sp.id = t.id; host.setTrack(t, ''); likeCheck(t); }
-    if (Date.now() > sp.hold) host.setPlaying(st.playing);
-    host.setProgress(st.progressMs, t.durationMs);
-    if (st.volume != null) host.setVolume(st.volume / 100);
-    host.setShuffle(!!st.shuffle);
-  }
-  async function likeCheck(t) {
-    try { host.setLiked(await host.call('sp:contains', t.id)); } catch { /* ignore */ }
+    try { apply(await state()); } catch (e) { say(e.message); } finally { busy = false; }
   }
 
-  let volT, seekT;
+  function apply(st) {
+    if (!active) return;
+    panel = !!st.visible;
+    if (st.proc === 'off') { say('Не подключён'); return; }
+    if (st.error === 'noruntime') { say('Ошибка: не найден Microsoft Edge WebView2 Runtime'); return; }
+    if (st.error) { say(`Ошибка: ${st.error}`); return; }
+    if (st.proc === 'starting') { say('Запуск Spotify…'); return; }
+    if (!st.authed) { say(st.visible ? 'Авторизация…' : 'Не подключён'); return; }
+    const m = st.media;
+    if (!m?.ready || !m.active) {
+      if (key !== null || !idle || status !== 'Подключён: включите песню в Spotify') {
+        key = null; idle = true; lastCover = ''; status = 'Подключён: включите песню в Spotify';
+        host.setPlaying(false);
+        host.setTrack(null, status);
+      }
+      return;
+    }
+    idle = false; status = '';
+    const k = `${m.title}|${m.artist}`;
+    if (k !== key || m.cover !== lastCover) {
+      key = k; lastCover = m.cover;
+      host.setTrack({
+        id: k, title: m.title, artists: m.artist || 'Spotify', album: m.album || '', year: '', genre: '',
+        app: 'Spotify', cover: m.cover || null, durationMs: m.durMs || 0,
+      }, '');
+    }
+    if (Date.now() > hold) host.setPlaying(!!m.playing);
+    if (typeof st.volume === 'number') host.setVolume(st.volume);
+    host.setProgress(m.posMs || 0, m.durMs || 0);
+  }
+
+  const cmd = async (type, value) => {
+    await host.call('media:cmd', { type, value });
+    setTimeout(poll, 250);
+  };
+
+  async function waitReady() {
+    for (let i = 0; i < 80; i++) {
+      const st = await state();
+      if (st.error) throw new Error(st.error === 'noruntime' ? 'Не найден Microsoft Edge WebView2 Runtime (ставится вместе с Edge)' : st.error);
+      if (st.proc === 'ready') return st;
+      await sleep(250);
+    }
+    throw new Error('Веб-плеер Spotify не запустился');
+  }
+
   return {
     id: 'sp',
     name: 'Spotify',
+    hint: 'Официальный веб-плеер внутри острова',
     icon: 'i-sp',
-    modes: [{ id: 'wave', icon: 'i-wave', tip: 'Сейчас играет' }, { id: 'fav', icon: 'i-heart', tip: 'Играть избранное' }],
-    caps: { shuffle: true },
+    // свои разделы Spotify: открываются в панели на официальных страницах
+    modes: [
+      { id: 'home', icon: 'i-trend', tip: 'Главная' },
+      { id: 'tracks', icon: 'i-heart', tip: 'Моя музыка' },
+      { id: 'playlists', icon: 'i-list', tip: 'Плейлисты' },
+    ],
+    // только то, что реально работает: перемешивание и лайк убраны (состояние страницы Spotify прочитать нельзя), эквалайзер недоступен
+    caps: { shuffle: false, like: false, queue: true, info: false, volume: true, eq: false, panel: true, search: 'web' },
 
     async start(h) {
       host = h;
-      host.setTrack(null, '');
-      const st = await host.call('sp:status');
-      sp.hasId = st.hasClientId; sp.builtin = st.builtin;
-      if (!st.authed) return 'auth';
-      active = true; sp.id = null; sp.idle = false;
+      status = ''; say('Запуск Spotify…');
+      await host.call('sp:start');
+      active = true; key = null; idle = false; lastCover = '';
+      const st = await waitReady();
+      if (!st.authed) {
+        // даём странице секунду определить вход по cookie, чтобы не просить вход зря
+        await sleep(3200);
+        if (!(await state()).authed) { active = false; return 'auth'; }
+      }
       poll();
-      timer = setInterval(poll, 1500);
+      timer = setInterval(poll, 1000);
       return 'ok';
     },
-    stop() { active = false; clearInterval(timer); sp.id = null; },
-
-    async setMode(mode, autoplay) {
-      if (mode === 'fav' && autoplay) {
-        try {
-          let uris = await host.call('sp:likedUris');
-          if (!uris.length) return host.flash('В избранном пока пусто');
-          if (host.settings.shuffle) uris = uris.sort(() => Math.random() - 0.5);
-          await host.call('sp:cmd', { type: 'playUris', uris });
-        } catch (e) { fail(e); }
-      }
-      setTimeout(poll, 500);
+    stop() {
+      active = false; clearInterval(timer); panel = false;
+      host?.call('sp:stop').catch(() => {});
+      host?.call('media:stop').catch(() => {}); // фильтр SMTC действует только на время Spotify
     },
 
+    async togglePanel() {
+      const on = !panel;
+      await host.call(on ? 'sp:show' : 'sp:hide');
+      panel = on;
+    },
+
+    setMode: (mode) => host.call('sp:nav', { to: mode }),
+    async searchWeb(q) { if (await host.call('sp:search', { q })) host.flash('Результаты поиска Spotify открыты в панели'); },
     toggle() {
       const was = host.isPlaying();
-      host.setPlaying(!was); sp.hold = Date.now() + 1500;
-      return cmd({ type: was ? 'pause' : 'play' });
+      host.setPlaying(!was); hold = Date.now() + 1200;
+      return cmd('toggle');
     },
-    next: () => cmd({ type: 'next' }),
-    prev: () => cmd({ type: 'previous' }),
-    seek(ms) {
-      clearTimeout(seekT);
-      seekT = setTimeout(() => { host.call('sp:cmd', { type: 'seek', value: ms }).catch(fail); }, 250);
-    },
-    setVolume(v) {
-      clearTimeout(volT);
-      volT = setTimeout(() => host.call('sp:cmd', { type: 'volume', value: v * 100 }).catch(fail), 120);
-    },
-    async like(on) {
-      if (!sp.id) return;
-      await host.call('sp:like', { id: sp.id, like: on });
-    },
-    toggleShuffle() { return cmd({ type: 'shuffle', value: !host.shuffleOn() }); },
+    next: () => cmd('next'),
+    prev: () => cmd('prev'),
+    seek: (ms) => cmd('seek', ms),
+    // громкость звуковой сессии веб-плеера в Windows: точная, значение читается обратно
+    setVolume: (v) => host.call('sp:volume', { v }),
+    like() {},
+    toggleShuffle() {},
+    // очередь читается со страницы /queue (текущий трек + «Далее»); выбор строки нажимает Play на странице
     async getQueue() {
-      try { sp.items = await host.call('sp:queue'); } catch { sp.items = []; }
-      host.setQueue(sp.items, -1);
+      try {
+        const { items, current } = await host.call('sp:queue');
+        qNodes = [0, ...items.map((x) => x.n)];
+        const list = [];
+        if (current) list.push({ id: 'now', title: current.title, artists: current.artist, cover: current.cover || SP_LOGO, durationMs: current.durMs || 0 });
+        else list.push(null);
+        for (const x of items) list.push({ id: String(x.n), title: x.title, artists: x.artists, cover: SP_LOGO, durationMs: x.dur || 0 });
+        const q = list.filter(Boolean);
+        if (!current) qNodes.shift();
+        host.setQueue(q, current ? 0 : -1);
+      } catch (e) { host.setQueue([], -1); host.flash(e.message); }
     },
-    playFromQueue: (i) => cmd({ type: 'playUris', uris: sp.items.slice(i).map((x) => x.uri) }),
-    trackUrl: (t) => `https://open.spotify.com/track/${t.id}`,
+    playFromQueue(i) {
+      const n = qNodes[i];
+      if (!n) return;
+      host.call('sp:queuePlay', { n }).then(() => setTimeout(poll, 1500));
+    },
+    trackUrl: () => null,
 
-    authView() {
-      if (!sp.hasId) {
-        return {
-          title: 'Spotify', tall: true,
-          text: 'Создайте приложение на developer.spotify.com (Redirect URI: http://127.0.0.1:53682/callback), скопируйте его Client ID и нажмите кнопку ниже.',
-          primary: 'Вставить Client ID из буфера',
-          link: { label: 'Открыть developer.spotify.com', url: 'https://developer.spotify.com/dashboard' },
-        };
+    authView: () => ({
+      title: 'Подключите Spotify',
+      text: 'Войдите на официальной странице Spotify. Подойдёт Free и Premium, пароль остаётся только у Spotify.',
+      primary: 'Подключить аккаунт',
+    }),
+    async authAction() {
+      await host.call('sp:start');
+      await waitReady();
+      await host.call('sp:show');
+      for (let i = 0; i < 600; i++) { // ждём вход до 10 минут
+        await sleep(1000);
+        const st = await state();
+        if (st.authed) { await host.call('sp:hide'); return true; }
+        if (st.proc === 'off') throw new Error('Окно Spotify закрыто');
       }
-      return {
-        title: 'Spotify', tall: true,
-        text: 'Остров управляет Spotify на вашем ПК. Нужен аккаунт Premium.',
-        primary: 'Войти через Spotify',
-        secondary: sp.builtin ? '' : 'Заменить Client ID (из буфера обмена)',
-      };
-    },
-    async authAction(kind) {
-      if (kind === 'secondary' || !sp.hasId) {
-        await host.call('sp:clientId');
-        sp.hasId = true;
-        return false;
-      }
-      return host.call('sp:login');
+      await host.call('sp:hide');
+      return false;
     },
   };
 })());

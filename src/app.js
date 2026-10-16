@@ -467,7 +467,10 @@ function renderControls() {
   $('#like').style.display = cp.like === false ? 'none' : '';
   $('#toQueue').style.display = cp.queue === false ? 'none' : '';
   $('#vol').style.display = cp.volume === false ? 'none' : '';
+  $('#toPanel').style.display = cp.panel ? '' : 'none';
+  $('#toInfo').style.display = cp.info === false ? 'none' : '';
   seg.style.display = P.modes.length ? '' : 'none';
+  $('#toEq').style.display = cp.eq === false ? 'none' : '';
   $('#toEq').classList.toggle('on', !!S.settings.eq?.on && cp.eq !== false);
   $('#srcIcon').setAttribute('href', `#${P.icon}`);
   $('#src').dataset.tip = `Источник: ${P.name}`;
@@ -500,7 +503,7 @@ function renderQueue(scrollTop) {
     const a = document.createElement('div'); a.className = 'q-t'; a.textContent = t.title;
     const b = document.createElement('div'); b.className = 'q-a'; b.textContent = t.artists;
     meta.append(a, b);
-    const d = document.createElement('div'); d.className = 'q-d'; d.textContent = fmt(t.durationMs / 1000);
+    const d = document.createElement('div'); d.className = 'q-d'; d.textContent = t.durationMs ? fmt(t.durationMs / 1000) : '';
     row.append(img, meta, d);
     row.addEventListener('click', () => P.playFromQueue(i));
     list.append(row);
@@ -539,6 +542,7 @@ $('#toQueue').onclick = () => setSub('queue');
 $('#toInfo').onclick = () => setSub('details');
 $('#toSearch').onclick = () => setSub('search');
 $('#toEq').onclick = () => setSub('eq');
+$('#toPanel').onclick = () => P.togglePanel?.().catch((e) => flash(e.message));
 // ───────────────────── выпадающий список источников ─────────────────────
 const menu = $('#menu');
 function renderMenu() {
@@ -931,7 +935,7 @@ bridge.on('cmd', (c) => {
 // ───────────────────── старт ─────────────────────
 (async function init() {
   S.settings = await call('settings:get');
-  S.source = S.settings.source === 'sp' ? 'media' : S.settings.source; // Spotify API отключён
+  S.source = S.settings.source;
   P = Providers.get(S.source) || Providers.list[0];
   S.mode = P.modes.some((m) => m.id === S.settings.mode) ? S.settings.mode : P.modes[0]?.id ?? '';
   Fx.set?.(eqState());

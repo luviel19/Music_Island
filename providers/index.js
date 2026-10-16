@@ -5,7 +5,7 @@
 // Каждый handler доступен интерфейсу как IPC-канал `${id}:${имя}`.
 const FACTORIES = [
   require('./ym'),
-  // require('./sp'),  // Spotify через Web API: нужен Premium у владельца Client ID; раскомментируйте вместе со скриптом в index.html
+  require('./sp'),  // Spotify: веб-плеер на WebView2 (native/spotify-host)
   require('./sc'),
   require('./yt'),
   // require('./zv'),  // Звук: стриминг закрыт антибот-защитой (HTTP 418); код оставлен, включите вместе со скриптом в index.html
