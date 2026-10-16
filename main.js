@@ -178,31 +178,75 @@ handle('open:external', (url) => {
 });
 
 // окно: прозрачные области пропускают клики, остров перетаскивается вручную
-let win, tray, drag = null;
+let win, tray, drag = null, quitting = false;
+app.on('before-quit', () => { quitting = true; });
 ipcMain.on('win:ignore', (_e, ignore) => win?.setIgnoreMouseEvents(ignore, { forward: true }));
 ipcMain.on('win:focusable', (_e, on) => {
   if (!win) return;
   win.setFocusable(!!on);
   if (on) { win.focus(); win.webContents.focus(); }
 });
+// Остров не выходит за экран. vp — желаемое положение окна, при котором остров стоит как надо (свёрнутый может быть в самом углу).
+// Само окно всегда целиком на мониторе, а остров внутри него смещается (CSS), поэтому раскрытие у края идёт плавно.
+ipcMain.on('win:box', (_e, w, h) => {
+  box = { w: Math.min(Math.max(+w || 240, 100), WIN_W), h: Math.min(Math.max(+h || 38, 30), WIN_H) };
+  lastShift = ''; // окно могло загрузиться позже первой отправки
+  place(false);
+});
 ipcMain.on('win:drag-start', () => {
   const c = screen.getCursorScreenPoint();
-  const b = win.getBounds();
-  drag = { cx: c.x, cy: c.y, x: b.x, y: b.y };
+  drag = { cx: c.x, cy: c.y, x: vp.x, y: vp.y };
 });
 ipcMain.on('win:drag-move', () => {
   if (!drag) return;
   const c = screen.getCursorScreenPoint();
-  win.setBounds({ x: drag.x + c.x - drag.cx, y: drag.y + c.y - drag.cy, width: WIN_W, height: WIN_H });
+  vp = clampPill(drag.x + c.x - drag.cx, drag.y + c.y - drag.cy, COMPACT, c); // тащим в углы по размеру свёрнутого
+  place(true);
 });
 ipcMain.on('win:drag-end', () => {
   drag = null;
-  const b = win.getBounds();
-  S.x = b.x; S.y = b.y;
+  S.x = vp.x; S.y = vp.y;
   saveSettings();
+  place(false);
 });
 
 // ───────────────────────── окно и трей ─────────────────────────
+// Остров нельзя вынести за границы экрана: окно целиком остаётся в рабочей области ближайшего монитора
+let box = { w: 240, h: 38 }; // текущий размер острова (он по центру окна сверху, отступ 8)
+const COMPACT = { w: 240, h: 38 };
+let vp = { x: 0, y: 0 }, lastShift = '';
+const pillDisplay = (x, y, near) => screen.getDisplayNearestPoint(near || { x: Math.round(x + WIN_W / 2), y: Math.round(y + 27) });
+function clampPill(x, y, bx = COMPACT, near) {
+  const a = pillDisplay(x, y, near).workArea;
+  const sx = (WIN_W - bx.w) / 2;
+  const lo = { x: a.x - sx, y: a.y - 8 };
+  const hi = { x: a.x + a.width - sx - bx.w, y: a.y + a.height - 8 - bx.h };
+  return {
+    x: Math.round(Math.min(Math.max(x, lo.x), Math.max(lo.x, hi.x))),
+    y: Math.round(Math.min(Math.max(y, lo.y), Math.max(lo.y, hi.y))),
+  };
+}
+function place(instant) {
+  if (!win || win.isDestroyed()) return;
+  const a = pillDisplay(vp.x, vp.y).workArea;
+  const w = {
+    x: Math.round(Math.min(Math.max(vp.x, a.x), Math.max(a.x, a.x + a.width - WIN_W))),
+    y: Math.round(Math.min(Math.max(vp.y, a.y), Math.max(a.y, a.y + a.height - WIN_H))),
+  };
+  const b = win.getBounds();
+  if (b.x !== w.x || b.y !== w.y || b.width !== WIN_W || b.height !== WIN_H) win.setBounds({ x: w.x, y: w.y, width: WIN_W, height: WIN_H });
+  const p = clampPill(vp.x, vp.y, box);
+  const key = `${p.x - w.x},${p.y - w.y},${instant}`;
+  if (key !== lastShift) { lastShift = key; win.webContents.send('shift', p.x - w.x, p.y - w.y, !!instant); }
+}
+// Сворачивание (Win+D, «свернуть все окна») и сброс видимости не должны убирать остров
+function keepAlive() {
+  if (!win || win.isDestroyed()) return;
+  if (win.isMinimized()) win.restore();
+  if (!win.isVisible()) win.showInactive();
+  if (!drag) place(false);
+  if (S.alwaysOnTop) win.setAlwaysOnTop(true, 'screen-saver');
+}
 function defaultPosition() {
   const wa = screen.getPrimaryDisplay().workArea;
   return { x: Math.round(wa.x + (wa.width - WIN_W) / 2), y: wa.y };
@@ -210,14 +254,15 @@ function defaultPosition() {
 function savedPosition() {
   if (S.x == null || S.y == null) return defaultPosition();
   const visible = screen.getAllDisplays().some((d) => {
-    const a = d.workArea;
-    return S.x + WIN_W / 2 > a.x && S.x + WIN_W / 2 < a.x + a.width && S.y > a.y - 40 && S.y < a.y + a.height - 40;
+    const a = d.workArea, cx = S.x + WIN_W / 2;
+    return cx >= a.x && cx <= a.x + a.width && S.y >= a.y - 8 && S.y <= a.y + a.height - 40;
   });
-  return visible ? { x: S.x, y: S.y } : defaultPosition();
+  return visible ? clampPill(S.x, S.y) : defaultPosition();
 }
 
 function createWindow() {
-  const pos = savedPosition();
+  vp = savedPosition();
+  const pos = { x: Math.round(Math.min(Math.max(vp.x, pillDisplay(vp.x, vp.y).workArea.x), pillDisplay(vp.x, vp.y).workArea.x + pillDisplay(vp.x, vp.y).workArea.width - WIN_W)), y: vp.y };
   win = new BrowserWindow({
     ...pos, width: WIN_W, height: WIN_H,
     frame: false, transparent: true, resizable: false, maximizable: false,
@@ -227,7 +272,11 @@ function createWindow() {
   });
   win.setIgnoreMouseEvents(true, { forward: true });
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
-  win.once('ready-to-show', () => { win.showInactive(); applySettings(); });
+  win.once('ready-to-show', () => { win.showInactive(); place(false); applySettings(); });
+  for (const ev of ['minimize', 'hide']) win.on(ev, () => { if (!quitting) setTimeout(keepAlive, 50); });
+  const onDisplays = () => { vp = savedPosition(); keepAlive(); };
+  for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, onDisplays);
+  setInterval(keepAlive, 2000);
 }
 
 function applySettings() {
@@ -266,7 +315,7 @@ function buildMenu() {
       } },
       { label: 'Забыть сохранённую ссылку', enabled: !!customTarget(), click: () => { S.proxyCustom = null; S.proxy = ''; S.proxyLast = null; setProxyMode(proxyMode() === 'builtin' ? 'builtin' : 'off'); } },
     ] },
-    { label: 'Вернуть в центр экрана', click: () => { const p = defaultPosition(); win.setPosition(p.x, p.y); S.x = p.x; S.y = p.y; saveSettings(); } },
+    { label: 'Вернуть в центр экрана', click: () => { const p = defaultPosition(); vp = p; S.x = p.x; S.y = p.y; saveSettings(); place(false); } },
     { type: 'separator' },
     ...providers.map((p) => ({ label: `Выйти из ${p.name}`, click: () => { p.handlers.logout(); send(`logout:${p.id}`); } })),
     { label: 'Spotify: скопировать диагностику', click: () => clipboard.writeText(JSON.stringify(providers.find((p) => p.id === 'sp').handlers.diag(), null, 2)) },

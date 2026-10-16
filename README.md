@@ -6,7 +6,7 @@
 
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=for-the-badge&logo=windows11&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron-44-47848F?style=for-the-badge&logo=electron&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.2.9-ffb347?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.2.10-ffb347?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-ff4d94?style=for-the-badge)
 
 **[⬇ Скачать](../../releases/latest)** &nbsp;·&nbsp; **[✨ Возможности](#-возможности)** &nbsp;·&nbsp; **[🎵 Площадки](#-площадки)** &nbsp;·&nbsp; **[🛠 Сборка](#-сборка-из-исходников)** &nbsp;·&nbsp; **[❓ Вопросы](#-вопросы-и-ответы)**

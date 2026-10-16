@@ -82,6 +82,9 @@ const host = {
 function applyState() {
   island.dataset.state = !S.open ? 'compact' : T.authNeeded ? 'auth' : S.sub;
   if (typeof Search !== 'undefined') Search.sync(island.dataset.state === 'search');
+  // главному процессу нужен размер острова: свёрнутый можно прижать к самому углу, раскрытый должен целиком поместиться на экране
+  const cs = getComputedStyle(island);
+  bridge.send('win:box', parseFloat(cs.getPropertyValue('--w')) || 240, parseFloat(cs.getPropertyValue('--h')) || 38);
 }
 function setOpen(v) {
   S.open = v;
@@ -141,6 +144,11 @@ island.addEventListener('click', () => { if (!justDragged && !S.open) setOpen(tr
 
 // ───────────────────── подсказки ─────────────────────
 const tip = $('#tip'), stage = $('#stage');
+// у края экрана раскрытый остров смещается внутрь на экран плавно, вместе со своей анимацией
+bridge.on('shift', (dx, dy, instant) => {
+  stage.classList.toggle('nofx', instant);
+  stage.style.setProperty('--sx', dx + 'px'); stage.style.setProperty('--sy', dy + 'px');
+});
 document.addEventListener('mouseover', (e) => {
   const b = e.target.closest('[data-tip]');
   if (!b) { tip.classList.remove('show'); return; }
