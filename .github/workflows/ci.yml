@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests and site checks
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Site is up to date and valid
+        shell: bash
+        run: |
+          node scripts/build-site.js
+          git diff --exit-code --ignore-cr-at-eol -- docs || (echo "docs/ is out of date: run node scripts/build-site.js and commit" && exit 1)
+          node scripts/check-site.js
+
+  spotify-host:
+    name: Build Spotify helper (SpotifyHost.exe)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run build:spotify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spotify-host
+          path: bin/spotify-host
+          retention-days: 14
+
+  links:
+    name: Documentation links
+    # Docker-действие lychee работает только на Linux-раннере (остальные задания идут на Windows)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Адреса luviel19.github.io не проверяются здесь: новые страницы сайта появляются только после merge,
+      # их доступность проверяет pages-check.yml. Остальные ссылки (в том числе на GitHub) проверяются всегда.
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress --max-retries 3 --accept 200,206,403,429
+            --exclude 'localhost' --exclude '^https://img\.shields\.io/' --exclude '^https://luviel19\.github\.io/'
+            README.md README.ru.md SECURITY.md CONTRIBUTING.md promo/marketing/*.md
+          fail: true

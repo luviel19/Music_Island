@@ -268,8 +268,11 @@ function createWindow() {
     frame: false, transparent: true, resizable: false, maximizable: false,
     hasShadow: false, skipTaskbar: true, focusable: false, show: false,
     backgroundColor: '#00000000',
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true },
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
+  // окно острова показывает только свой интерфейс: чужие адреса и новые окна не открываем
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', (e) => e.preventDefault());
   win.setIgnoreMouseEvents(true, { forward: true });
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
   win.once('ready-to-show', () => { win.showInactive(); place(false); applySettings(); });

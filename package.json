@@ -1,13 +1,17 @@
 {
   "name": "music-island",
   "version": "0.2.10",
-  "description": "Dynamic Island для музыки: Яндекс Музыка, SoundCloud, YouTube и системный плеер",
+  "description": "Free open-source Dynamic Island music player for Windows: Spotify, Yandex Music, YouTube, SoundCloud and system player",
+  "homepage": "https://luviel19.github.io/Music_Island/",
+  "repository": { "type": "git", "url": "git+https://github.com/luviel19/Music_Island.git" },
+  "bugs": { "url": "https://github.com/luviel19/Music_Island/issues" },
+  "keywords": ["dynamic-island", "windows", "spotify", "music-player", "desktop-widget", "electron", "yandex-music", "soundcloud", "youtube"],
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "dist": "npm run build:spotify && electron-builder --win nsis",
     "pack": "electron-builder --win --dir",
-    "test": "node --test tests/*.test.js",
+    "test": "node --test",
     "build:spotify": "powershell -NoProfile -ExecutionPolicy Bypass -File native/spotify-host/build.ps1"
   },
   "license": "MIT",
