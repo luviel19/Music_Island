@@ -30,6 +30,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "security.js",
       "updater.js",
       "tunnel.js",
       "builtin-proxy.json",

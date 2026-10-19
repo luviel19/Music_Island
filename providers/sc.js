@@ -112,7 +112,7 @@ module.exports = function createSoundCloud(ctx) {
       let done = false;
       const finish = (t) => {
         if (done) return; done = true; clearInterval(iv);
-        if (t) { d().token = ctx.enc(t); d().uid = null; ctx.save(); }
+        if (t) { try { d().token = ctx.enc(t); d().uid = null; ctx.save(); } catch { t = null; } } // хранилище Windows недоступно: токен не сохраняем
         resolve(!!t); if (!w.isDestroyed()) w.close();
       };
       const iv = setInterval(async () => {
