@@ -15,7 +15,7 @@
 
 <br>
 
-<img src="assets/promo.gif" width="640" alt="Music Island: промо-ролик" />
+<img src="assets/promo.gif" width="540" alt="Music Island: как это выглядит" />
 
 <br><br>
 
