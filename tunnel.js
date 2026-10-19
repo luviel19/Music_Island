@@ -20,7 +20,9 @@ function freePort() {
   });
 }
 
-function configFor(link, port) {
+// insecure=1 в ссылке отключает проверку сертификата сервера, поэтому он применяется только с явным согласием (allowInsecure)
+const wantsInsecure = (link) => { try { return /^(1|true)$/i.test(new URL(String(link).trim().replace(/^hy2:/i, 'hysteria2:')).searchParams.get('insecure') || ''); } catch { return false; } };
+function configFor(link, port, allowInsecure = false) {
   const u = new URL(String(link).trim().replace(/^hy2:/i, 'hysteria2:'));
   if (!u.hostname || !(u.username || u.password)) throw new Error('В ссылке hysteria2 нет сервера или пароля');
   const auth = decodeURIComponent(u.password ? `${u.username}:${u.password}` : u.username);
@@ -30,7 +32,7 @@ function configFor(link, port) {
     `auth: ${JSON.stringify(auth)}`,
     'tls:',
     ...(q.get('sni') ? [`  sni: ${JSON.stringify(q.get('sni'))}`] : []),
-    ...(/^(1|true)$/i.test(q.get('insecure') || '') ? ['  insecure: true'] : []),
+    ...(allowInsecure && wantsInsecure(link) ? ['  insecure: true'] : []),
     'http:',
     `  listen: 127.0.0.1:${port}`,
   ];
@@ -46,13 +48,13 @@ module.exports = function createTunnel(app) {
   }
 
   // запускает клиент и возвращает адрес локального SOCKS5 'host:port'
-  async function start(link, wait = 10000) {
+  async function start(link, wait = 10000, { allowInsecure = false } = {}) {
     stop();
     const exe = binary(app);
     if (!exe) throw new Error('В этой сборке нет клиента Hysteria (bin/hysteria.exe)');
     const port = await freePort();
     cfgFile = path.join(os.tmpdir(), `mi-hy-${process.pid}.yaml`);
-    fs.writeFileSync(cfgFile, configFor(link, port), { mode: 0o600 });
+    fs.writeFileSync(cfgFile, configFor(link, port, allowInsecure), { mode: 0o600 });
     const p = spawn(exe, ['client', '-c', cfgFile], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     child = p;
     await new Promise((resolve, reject) => {
@@ -70,5 +72,6 @@ module.exports = function createTunnel(app) {
     return `127.0.0.1:${port}`;
   }
 
-  return { start, stop, isHy, available: () => !!binary(app) };
+  return { start, stop, isHy, wantsInsecure, available: () => !!binary(app) };
 };
+module.exports.configFor = configFor; // для тестов

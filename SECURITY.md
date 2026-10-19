@@ -27,14 +27,18 @@ The installer is **not code-signed**, so Windows SmartScreen may warn about an u
 
 | Data | Where | Notes |
 |---|---|---|
-| Yandex Music token, SoundCloud token, VPN link | `%APPDATA%\Music Island\settings.json` | Encrypted with Windows (Electron `safeStorage`) when available |
+| Yandex Music token, SoundCloud token, VPN link | `%APPDATA%\Music Island\settings.json` | Always encrypted with Windows (Electron `safeStorage`). If Windows secure storage is unavailable, secrets are not saved at all (never as plain text). Plain-text values written by older versions are encrypted on first start |
 | Spotify session | `%APPDATA%\Music Island\spotify-profile` (WebView2 profile) | Sign-in happens on the real Spotify page; the app only checks that the sign-in cookie exists and never reads or transmits its value |
 | Network | Directly to the services you use (Spotify, Yandex Music, YouTube, SoundCloud) and to `api.github.com` for the update check | No telemetry, no servers of our own. Only SoundCloud and YouTube go through VPN/proxy if you enable it |
 
 ## Design notes / Устройство
 
 - The island window uses `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, denies new windows and in-window navigation.
-- IPC handlers are registered per provider; `open:external` opens only `https` links to hosts that providers declare.
+- The window can call only an explicit allow-list of IPC channels (`preload.js`, mirrored in `security.js` and covered by tests). The main process also accepts messages only from the island's own page (`src/index.html` in the main frame of its own window).
+- `settings:set` and `settings.json` are validated: unknown keys are dropped, types, ranges and lengths are checked.
+- `open:external` opens only `https` links to hosts that providers declare.
+- VPN (hysteria2): certificate verification is on by default. A link with `insecure=1` is honoured only after you explicitly allow it for that server in a warning dialog.
+- The CORS header that the equalizer needs is added only to audio responses from Yandex Music and SoundCloud hosts, and only for the island window.
 - The updater reads the latest release tag from the GitHub API and opens the release page in the browser. It does not download or run code.
 - The Spotify helper (`SpotifyHost.exe`) is a separate process with an allow-list of navigation hosts; it does not log cookies or tokens, does not block ads and does not bypass DRM.
 - Dependencies: `npm audit --omit=dev` reports no known vulnerabilities at the time of writing; dev tools (Electron, electron-builder) are not shipped except Electron itself, which is updated regularly.

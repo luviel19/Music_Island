@@ -4,6 +4,8 @@ const {
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { pathToFileURL } = require('url');
+const security = require('./security');
 
 const WIN_W = 560;
 const WIN_H = 520;
@@ -38,12 +40,23 @@ const S = {
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 
 function loadSettings() {
-  try { Object.assign(S, JSON.parse(fs.readFileSync(settingsFile(), 'utf8'))); } catch { /* первый запуск */ }
+  // берём только известные поля с правильными типами: испорченный или подменённый файл не должен ломать настройки
+  try { Object.assign(S, security.sanitizeStored(JSON.parse(fs.readFileSync(settingsFile(), 'utf8')), providers.map((p) => p.id))); } catch { /* первый запуск */ }
   // миграция со старого формата, где токены лежали в корне
   const p = (S.providers ||= {});
   if (S.token) { (p.ym ||= {}).token = S.token; delete S.token; }
   if (S.spClientId) { (p.sp ||= {}).clientId = S.spClientId; delete S.spClientId; }
   if (S.spRefresh) { (p.sp ||= {}).refresh = S.spRefresh; delete S.spRefresh; }
+  migrateSecrets();
+}
+// Секреты, сохранённые старыми версиями открытым текстом, шифруются при первом запуске (если хранилище Windows доступно)
+function migrateSecrets() {
+  if (!safeStorage.isEncryptionAvailable()) return;
+  let changed = false;
+  const fix = (o, k) => { if (typeof o[k] === 'string' && o[k] && !o[k].startsWith('enc:')) { o[k] = enc(o[k]); changed = true; } };
+  for (const d of Object.values(S.providers || {})) if (d && typeof d === 'object') fix(d, 'token');
+  fix(S, 'proxyCustom'); fix(S, 'proxyLast');
+  if (changed) saveSettings();
 }
 function saveSettings() {
   try { fs.writeFileSync(settingsFile(), JSON.stringify(S)); } catch { /* ignore */ }
@@ -56,7 +69,12 @@ const publicSettings = () => ({
 const QUIET_KEYS = ['eq', 'tune'];
 
 // ───────────────────────── провайдеры ─────────────────────────
-const enc = (v) => (!v ? null : safeStorage.isEncryptionAvailable() ? 'enc:' + safeStorage.encryptString(v).toString('base64') : v);
+// Секреты хранятся только зашифрованными. Если хранилище Windows недоступно, не сохраняем их открытым текстом
+const enc = (v) => {
+  if (!v) return null;
+  if (!safeStorage.isEncryptionAvailable()) throw new Error('Защищённое хранилище Windows недоступно: данные для входа не сохранены, чтобы не лежать открытым текстом');
+  return 'enc:' + safeStorage.encryptString(v).toString('base64');
+};
 const dec = (v) => {
   if (!v) return null;
   try { return v.startsWith('enc:') ? safeStorage.decryptString(Buffer.from(v.slice(4), 'base64')) : v; } catch { return null; }
@@ -99,14 +117,32 @@ async function subscriptionLinks(url) {
   return hy;
 }
 // перебираем серверы по порядку; первый, к которому удалось подключиться, остаётся (недавно рабочий — первым)
-async function startFromSub(url) {
+// Ссылка с insecure=1 просит не проверять сертификат сервера. Включаем это только после явного согласия пользователя
+// для этого сервера (запоминается); встроенный прокси автора считается доверенным.
+function insecureAllowed(link, trusted) {
+  if (!tunnel.wantsInsecure(link)) return false;
+  if (trusted) return true;
+  let host = '';
+  try { host = new URL(String(link).trim().replace(/^hy2:/i, 'hysteria2:')).host; } catch { return false; }
+  S.insecureOk ||= [];
+  if (S.insecureOk.includes(host)) return true;
+  const r = dialog.showMessageBoxSync({
+    type: 'warning', title: 'Music Island', buttons: ['Не разрешать', 'Разрешить для этого сервера'], defaultId: 0, cancelId: 0,
+    message: `Сервер ${host} просит отключить проверку сертификата (insecure=1).`,
+    detail: 'Без проверки сертификата трафик может перехватить посторонний. Разрешайте, только если доверяете этому серверу. Если отказаться, подключение пойдёт с обычной проверкой и может не удаться.',
+  });
+  if (r !== 1) return false;
+  S.insecureOk.push(host); saveSettings();
+  return true;
+}
+async function startFromSub(url, trustedLink = false) {
   let links;
   try { links = await subscriptionLinks(url); } catch (e) { if (!S.proxyLast) throw e; links = []; }
   const last = S.proxyLast ? dec(S.proxyLast) : null;
   if (last) links = [last, ...links.filter((x) => x !== last)];
   let err;
   for (const l of links) {
-    try { const addr = await tunnel.start(l, 6000); S.proxyLast = enc(l); saveSettings(); return addr; } catch (e) { err = e; }
+    try { const addr = await tunnel.start(l, 6000, { allowInsecure: insecureAllowed(l, trustedLink) }); try { S.proxyLast = enc(l); } catch { S.proxyLast = null; } saveSettings(); return addr; } catch (e) { err = e; }
   }
   throw err || new Error('Нет доступных серверов');
 }
@@ -124,8 +160,8 @@ async function applyProxy() {
   const target = mode === 'builtin' ? builtinLink() : mode === 'custom' ? customTarget() : '';
   let rule = null;
   try {
-    if (target && isSub(target)) rule = proxyRule(await startFromSub(target.trim()));
-    else if (target && tunnel.isHy(target)) rule = proxyRule(await tunnel.start(target));
+    if (target && isSub(target)) rule = proxyRule(await startFromSub(target.trim(), mode === 'builtin'));
+    else if (target && tunnel.isHy(target)) rule = proxyRule(await tunnel.start(target, 10000, { allowInsecure: insecureAllowed(target, mode === 'builtin') }));
     else { tunnel.stop(); rule = target ? proxyRule(target) : null; }
   } catch (e) {
     tunnel.stop();
@@ -152,8 +188,18 @@ function friendly(e) {
   if (/ERR_CERT_/.test(m)) return 'Ошибка сертификата: прокси подменяет трафик, это небезопасно';
   return m;
 }
+// Принимаем сообщения только от главной страницы острова (src/index.html) в нашем окне
+const UI_URL = () => pathToFileURL(path.join(__dirname, 'src', 'index.html')).href;
+function trusted(e) {
+  try {
+    return !!win && !win.isDestroyed() && e.sender === win.webContents && e.senderFrame === win.webContents.mainFrame
+      && e.senderFrame.url.split(/[?#]/)[0] === UI_URL();
+  } catch { return false; }
+}
+function on(channel, fn) { ipcMain.on(channel, (e, ...args) => { if (trusted(e)) fn(e, ...args); }); }
 function handle(name, fn) {
-  ipcMain.handle(name, async (_e, ...args) => {
+  ipcMain.handle(name, async (e, ...args) => {
+    if (!trusted(e)) return { ok: false, error: 'forbidden' };
     try { return { ok: true, data: await fn(...args) }; } catch (e) { return { ok: false, error: friendly(e) }; }
   });
 }
@@ -163,6 +209,7 @@ for (const p of providers) {
 
 handle('settings:get', () => publicSettings());
 handle('settings:set', (patch) => {
+  patch = security.sanitizePatch(patch, providers.map((p) => p.id)); // неизвестные ключи и неверные значения отбрасываются
   for (const k of ['alwaysOnTop', 'hoverExpand', 'lockPosition', 'source', 'mode', 'shuffle', ...QUIET_KEYS]) {
     if (k in patch) S[k] = patch[k];
   }
@@ -180,30 +227,30 @@ handle('open:external', (url) => {
 // окно: прозрачные области пропускают клики, остров перетаскивается вручную
 let win, tray, drag = null, quitting = false;
 app.on('before-quit', () => { quitting = true; });
-ipcMain.on('win:ignore', (_e, ignore) => win?.setIgnoreMouseEvents(ignore, { forward: true }));
-ipcMain.on('win:focusable', (_e, on) => {
+on('win:ignore', (_e, ignore) => win?.setIgnoreMouseEvents(ignore, { forward: true }));
+on('win:focusable', (_e, on) => {
   if (!win) return;
   win.setFocusable(!!on);
   if (on) { win.focus(); win.webContents.focus(); }
 });
 // Остров не выходит за экран. vp — желаемое положение окна, при котором остров стоит как надо (свёрнутый может быть в самом углу).
 // Само окно всегда целиком на мониторе, а остров внутри него смещается (CSS), поэтому раскрытие у края идёт плавно.
-ipcMain.on('win:box', (_e, w, h) => {
+on('win:box', (_e, w, h) => {
   box = { w: Math.min(Math.max(+w || 240, 100), WIN_W), h: Math.min(Math.max(+h || 38, 30), WIN_H) };
   lastShift = ''; // окно могло загрузиться позже первой отправки
   place(false);
 });
-ipcMain.on('win:drag-start', () => {
+on('win:drag-start', () => {
   const c = screen.getCursorScreenPoint();
   drag = { cx: c.x, cy: c.y, x: vp.x, y: vp.y };
 });
-ipcMain.on('win:drag-move', () => {
+on('win:drag-move', () => {
   if (!drag) return;
   const c = screen.getCursorScreenPoint();
   vp = clampPill(drag.x + c.x - drag.cx, drag.y + c.y - drag.cy, COMPACT, c); // тащим в углы по размеру свёрнутого
   place(true);
 });
-ipcMain.on('win:drag-end', () => {
+on('win:drag-end', () => {
   drag = null;
   S.x = vp.x; S.y = vp.y;
   saveSettings();
@@ -313,7 +360,8 @@ function buildMenu() {
       { label: 'Вставить новый VPN или прокси (из буфера)', click: async () => {
         const v = (await ctx.readClip()).trim();
         if (!proxyRule(v) && !tunnel.isHy(v) && !isSub(v)) { dialog.showErrorBox('Music Island', 'В буфере обмена нет адреса прокси.\nПодходит: ссылка на подписку VPN (https://…), hysteria2://…, socks5://host:port или 127.0.0.1:1080'); return; }
-        S.proxyCustom = enc(v); S.proxy = ''; S.proxyLast = null;
+        try { S.proxyCustom = enc(v); } catch (e) { dialog.showErrorBox('Music Island', e.message); return; }
+        S.proxy = ''; S.proxyLast = null;
         setProxyMode('custom');
       } },
       { label: 'Забыть сохранённую ссылку', enabled: !!customTarget(), click: () => { S.proxyCustom = null; S.proxy = ''; S.proxyLast = null; setProxyMode(proxyMode() === 'builtin' ? 'builtin' : 'off'); } },
@@ -330,7 +378,8 @@ function buildMenu() {
 // звук и без CORS, но если сочтёт поток чужим — будет тишина. Страхуемся: дописываем заголовок медиа-ответам.
 function allowMediaCors() {
   session.defaultSession.webRequest.onHeadersReceived({ urls: ['https://*/*'] }, (d, cb) => {
-    if (d.resourceType !== 'media') return cb({});
+    // только аудио Яндекс Музыки и SoundCloud (нужны эквалайзеру) и только для окна острова, не для окон входа
+    if (d.resourceType !== 'media' || !security.isMediaHost(d.url) || !win || d.webContentsId !== win.webContents.id) return cb({});
     const h = d.responseHeaders || {};
     if (Object.keys(h).some((k) => k.toLowerCase() === 'access-control-allow-origin')) return cb({});
     cb({ responseHeaders: { ...h, 'Access-Control-Allow-Origin': ['*'] } });

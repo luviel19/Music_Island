@@ -86,7 +86,7 @@ module.exports = function createZvuk(ctx) {
       let done = false;
       const finish = (t) => {
         if (done) return; done = true; clearInterval(iv);
-        if (t) { d().token = ctx.enc(t); ctx.save(); }
+        if (t) { try { d().token = ctx.enc(t); ctx.save(); } catch { t = null; } }
         resolve(!!t); if (!w.isDestroyed()) w.close();
       };
       const iv = setInterval(async () => {
