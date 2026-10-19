@@ -1,264 +1,242 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="Music Island" width="100%" />
+<img src="assets/icon.png" width="112" alt="Music Island logo" />
+
+# Music Island
+
+**A free, open-source Dynamic Island music player for Windows 10/11.**
+Control Spotify, Yandex Music, YouTube and SoundCloud from one floating desktop widget.
+
+**English** · [Русский](README.ru.md)
+
+[![Download](https://img.shields.io/badge/%E2%AC%87%20Download-latest%20release-ff4d94?style=for-the-badge)](../../releases/latest)
+[![Website](https://img.shields.io/badge/Website-luviel19.github.io-7B61FF?style=for-the-badge)](https://luviel19.github.io/Music_Island/)
+[![Releases](https://img.shields.io/badge/Releases-all%20versions-ffb347?style=for-the-badge)](../../releases)
+
+![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows11&logoColor=white)
+![Electron](https://img.shields.io/badge/Electron-44-47848F?logo=electron&logoColor=white)
+[![Release](https://img.shields.io/github/v/release/luviel19/Music_Island?color=ffb347)](../../releases/latest)
+[![License](https://img.shields.io/github/license/luviel19/Music_Island?color=ff4d94)](LICENSE)
+[![CI](https://github.com/luviel19/Music_Island/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 
 <br>
 
-![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=for-the-badge&logo=windows11&logoColor=white)
-![Electron](https://img.shields.io/badge/Electron-44-47848F?style=for-the-badge&logo=electron&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.2.10-ffb347?style=for-the-badge)
-![License](https://img.shields.io/badge/license-MIT-ff4d94?style=for-the-badge)
+<img src="assets/promo.gif" width="540" alt="Music Island demo: collapsed island, hover to expand, waveform, next track and queue with Spotify" />
 
-**Music Island — an open-source Dynamic Island music player for Windows 10/11 with Spotify, YouTube, SoundCloud and Yandex Music.**
-
-**[⬇ Download / Скачать](../../releases/latest)** &nbsp;·&nbsp; **[🌐 Website](https://luviel19.github.io/Music_Island/)** &nbsp;·&nbsp; **[✨ Возможности](#-возможности)** &nbsp;·&nbsp; **[🎵 Площадки](#-площадки)** &nbsp;·&nbsp; **[🛠 Сборка](#-сборка-из-исходников)** &nbsp;·&nbsp; **[❓ Вопросы](#-вопросы-и-ответы)**
-
-<br>
-
-<img src="assets/promo.gif" width="540" alt="Music Island: как это выглядит" />
-
-<br><br>
-
-<img src="assets/screenshot.png" width="640" alt="Music Island: раскрытый остров" />
-
-<br><br>
-
-<img src="assets/screenshot-compact.png" width="420" alt="Music Island: компактный режим" />
+<sub>Demo with made-up tracks, recorded from the real app interface.</sub>
 
 </div>
 
-<details>
-<summary><b>🇬🇧 English</b></summary>
+<br>
+
+## Why Music Island
+
+Music Island is a small always-on-top «island» in the spirit of Apple's Dynamic Island, made for the Windows desktop. Collapsed, it is a thin pill with a live indicator. Hover over it and it expands into the cover, title, a waveform progress bar and playback controls. Colours adapt to the cover art.
+
+- **One island for several services:** Spotify, Yandex Music, SoundCloud, YouTube and any system media player.
+- **Spotify without developer keys:** the official web player runs inside the island, so Free and Premium both work.
+- **Free and open source** under the MIT license. No ads in the app, no accounts with us, no telemetry.
+- **Stays out of the way:** click-through where transparent, never leaves the screen, snaps into the very corner.
+
+**[⬇ Download the latest release](../../releases/latest)** · Windows 10/11 x64 · the installer is not code-signed (see [Security](#-security-and-verifying-the-download)).
 
 <br>
 
-Music Island is a small always-on-top «island» for your Windows desktop. It shows the current track, a waveform progress bar and playback controls, expands on hover and adapts its colours to the cover art.
+## ✨ Features
 
-- **Sources:** Spotify (the official web player inside the island via Microsoft Edge WebView2, Free or Premium), YouTube, SoundCloud, Yandex Music and any system media player.
-- **One search** across all sources, a 10-band equalizer (Yandex Music and SoundCloud), queue, likes, media keys, tray menu, autostart.
-- **Spotify without developer keys:** you log in on the real open.spotify.com page; the island controls playback through Windows media controls and reads the queue from the page. No Spotify Web API, no Client ID, no cookie extraction, no ad blocking.
-- **Stays on screen:** the island cannot be dragged off screen, collapsed it snaps into the very corner, and it survives Win+D.
+| | |
+|---|---|
+| 🏝 **Floating island** | Always on top, expands on hover, draggable, can be pinned, survives Win+D and monitor changes |
+| 🔎 **Search across services** | One query searches Yandex Music, SoundCloud and YouTube; the same song is merged into one row with service icons |
+| 🌊 **Waveform progress** | Bars follow the shape of the song, click to seek |
+| 🎚 **10-band equalizer** | Yandex Music and SoundCloud: manual bands, presets, colour grid in the island background |
+| 🧭 **My Wave tuning** | Yandex Music: pick by mood, activity and character of the songs |
+| 📜 **Queue and track card** | Browse upcoming tracks, open details, like songs (where the service supports it) |
+| ⌨️ **Media keys and tray** | Global media keys, tray menu, autostart with Windows |
+| 🔔 **Update notice** | Checks GitHub Releases and shows a notice with a download button (it does not install anything by itself) |
 
-**Download:** [latest release](../../releases/latest) · Windows 10/11 x64 · MIT license.
-**Build:** `npm install && npm run build:spotify && npm start`
+<br>
 
-> Not affiliated with Spotify, YouTube, SoundCloud or Yandex. Spotify has no like, shuffle or equalizer in the island because the embedded web player does not expose them.
+## 🎵 Supported services
 
+| Feature | Spotify | Yandex Music | YouTube | SoundCloud | System player |
+|---|:-:|:-:|:-:|:-:|:-:|
+| Play / pause / next / previous / seek | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Track, cover and progress in the island | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Queue inside the island | ✅ | ✅ | ✅ | ✅ | — |
+| Volume control | ✅ | ✅ | ✅ | ✅ | — |
+| Like | — | ✅ | — | ◐ needs sign-in | — |
+| Shuffle | — | ◐ Favorites only | — | — | — |
+| 10-band equalizer | — | ✅ | — | ✅ | — |
+| Search from the island | ◐ opens the official page in a panel | ✅ | ✅ | ✅ | — |
+| Sign-in | Your Spotify account | OAuth token | Not needed | Optional (likes) | Not needed |
+
+The table lists only what works in the current release. A missing function is hidden in the interface instead of being faked.
+
+### 🟢 Spotify in detail
+
+Spotify is connected **through the official web player** `open.spotify.com` embedded in Microsoft Edge WebView2 (a helper process `SpotifyHost.exe`, source in [`native/spotify-host`](native/spotify-host)).
+
+- You sign in on the real Spotify page. The password stays with Spotify, the session is stored on your PC.
+- The island shows title, cover and progress and controls playback through Windows media controls. Volume is the Windows audio session of the player.
+- **My music** starts your Liked Songs without showing the window. The queue is read from the page and shown inside the island.
+- Library, playlists and search open the official page in a panel under the island.
+- Not used: Spotify Web API, Client ID, developer keys, Premium requirement, private APIs, cookie extraction, ad blocking, DRM or TLS bypass. Ads in the Free plan play as in a normal browser.
+- Spotify Desktop and a separate Edge window are not needed. The WebView2 Runtime ships with current Windows 10/11.
+
+> [!NOTE]
+> The embedded web player does not expose like or shuffle state, so Spotify has no like, shuffle or equalizer in the island. These are limits of the method, not bugs.
+
+<br>
+
+## 🖼 Screenshots
+
+<p align="center">
+  <img src="assets/screenshot.png" width="420" alt="Music Island expanded: cover, waveform and controls" />
+  <img src="docs/shot-queue.png" width="420" alt="Music Island queue with Spotify logos (demo tracks)" />
+</p>
+<p align="center">
+  <img src="assets/screenshot-compact.png" width="320" alt="Music Island in compact mode" />
+  <img src="docs/shot-expanded.png" width="420" alt="Music Island with Spotify, expanded (demo tracks)" />
+</p>
+
+<br>
+
+## 📥 Installation
+
+1. Download `Music-Island-Setup-*.exe` from the **[latest release](../../releases/latest)**.
+2. Run the installer, choose a folder and wait for it to finish.
+3. The island appears on the screen. The tray icon opens the settings.
+
+> [!NOTE]
+> The installer is **not digitally signed**, so Windows SmartScreen may show “Windows protected your PC”. Verify the download first (see below), then choose **More info → Run anyway**. Do not turn off Windows Defender.
+
+### Sign-in
+
+| Service | How to connect |
+|---|---|
+| **Yandex Music** | The island explains how to get a token and shows a paste button. The token is stored only on your PC, encrypted |
+| **SoundCloud** | Listening works without sign-in. For likes, paste the `oauth_token` cookie value |
+| **Spotify** | Choose “Spotify”, press “Connect account” and sign in on the Spotify page |
+| **YouTube, system player** | No sign-in |
+
+### VPN or proxy for SoundCloud and YouTube
+
+If a service is blocked in your country, open **VPN/proxy** in the tray menu and paste a link from the clipboard: a VPN subscription link (hysteria2 servers are tried in turn), a `hysteria2://…` link, or `socks5://host:port` / `http://host:port`. Only **SoundCloud and YouTube** (with their sign-in and captchas) go through it; other services connect directly. The link is stored encrypted and VPN is toggled with one checkbox in the tray.
+
+<br>
+
+## ❓ FAQ
+
+<details>
+<summary><b>Is Music Island free?</b></summary>
+
+Yes. It is free and open source under the MIT license. The app has no ads and no paid features.
+</details>
+
+<details>
+<summary><b>Do I need Spotify Premium?</b></summary>
+
+No. The island opens the regular Spotify web player, so Free (with ads, as in a browser) and Premium both work.
+</details>
+
+<details>
+<summary><b>Why does Spotify have no like or equalizer?</b></summary>
+
+Audio plays inside the embedded Spotify page, which does not expose like or shuffle state. The island only shows functions it can perform honestly.
+</details>
+
+<details>
+<summary><b>SoundCloud or YouTube do not open</b></summary>
+
+Enable VPN or proxy in the tray menu. It does not affect other services.
+</details>
+
+<details>
+<summary><b>The island blocks clicks on windows under it</b></summary>
+
+It should not: transparent areas are click-through. When collapsed it occupies only its small pill.
+</details>
+
+<details>
+<summary><b>Is it affiliated with Spotify, Yandex, YouTube or SoundCloud?</b></summary>
+
+No. It is an independent project and all trademarks belong to their owners.
 </details>
 
 <br>
 
-## 💡 Что это
+## 🔒 Security and verifying the download
 
-**Music Island** — маленький «остров» в стиле Dynamic Island, который висит поверх рабочего стола. В свёрнутом виде он показывает живой индикатор, при наведении раскрывается: обложка, название, волна, кнопки. Цвета острова подстраиваются под обложку трека.
+- The installer is **not code-signed**. SmartScreen may warn about unknown publishers. Download only from the [official releases](../../releases) and compare the SHA-256 hash printed in the release notes:
 
-Все ваши музыкальные сервисы в одном месте, без лишних окон и вкладок.
+  ```powershell
+  Get-FileHash .\Music-Island-Setup-0.2.10.exe -Algorithm SHA256
+  ```
 
-<br>
+- Sign-in tokens (Yandex Music, SoundCloud, VPN link) are stored encrypted with Windows (Electron `safeStorage`). The Spotify session lives in the WebView2 profile in `%APPDATA%\Music Island\spotify-profile`.
+- The island window runs with `contextIsolation`, no Node integration and a sandbox, and refuses navigation to other pages. The update check only reads the latest release tag from GitHub and opens the release page in your browser.
+- Full details and how to report a vulnerability: [SECURITY.md](SECURITY.md).
 
-## ✨ Возможности
+## ⚠️ Limitations
 
-<table>
-<tr>
-<td width="50%" valign="top">
-
-### 🎛 Всё в одном окне
-Яндекс Музыка, SoundCloud, YouTube, Spotify и системный плеер. Переключение через список прямо на острове или из трея.
-
-### 🔎 Поиск по всем площадкам
-Один запрос ищет сразу везде. Одна и та же песня склеивается в одну строку, а значки показывают, где она нашлась. Клик по значку запускает её именно там.
-
-### 🌊 Волновой прогресс
-Палочки повторяют форму песни, клик по волне перематывает.
-
-### 🎚 Эквалайзер на 10 полос
-Для Яндекс Музыки и SoundCloud: ручная настройка, пресеты и красивая сетка квадратиков на фоне острова в цвет обложки.
-
-</td>
-<td width="50%" valign="top">
-
-### 🧭 Настройка «Моей волны»
-Яндекс Музыка: подбор по настроению, занятию и характеру песен.
-
-### 📜 Очередь и карточка трека
-Листайте следующие треки, открывайте подробности, ставьте лайки.
-
-### 🖱 Остров ваш
-Перетаскивается куда угодно, положение можно закрепить. Работает поверх всех окон, раскрывается при наведении, не мешает кликам мимо себя.
-
-### ⌨️ Медиа-клавиши и трей
-Глобальные клавиши, меню в трее, автозапуск вместе с Windows.
-
-### 🔔 Обновления
-Когда на GitHub выходит новая версия, остров сам покажет уведомление с кнопкой «Скачать».
-
-</td>
-</tr>
-</table>
+- Windows 10 and 11 only.
+- Yandex Music and SoundCloud use unofficial APIs, which may change without notice.
+- Spotify works through the embedded web player. The queue and “My music” are read from the Spotify page and may break if Spotify changes its layout. Ads in the Free plan play as in a normal web player; the island does not block them.
+- Zvuk and VK are not supported: the first has bot protection, the second has a closed API.
 
 <br>
 
-## 🎵 Площадки
+## 🛠 Build from source
 
-| | Что есть | Вход |
-|---|---|---|
-| <img src="https://img.shields.io/badge/-Яндекс%20Музыка-FFDB4D?style=flat-square&logoColor=black" /> | «Моя волна» с настройкой, избранное, лайки, очередь, эквалайзер | OAuth-токен |
-| <img src="https://img.shields.io/badge/-SoundCloud-FF5500?style=flat-square&logo=soundcloud&logoColor=white" /> | Тренды, ваши лайки, трек по ссылке из буфера, эквалайзер. Поддерживает HLS-треки | Необязателен, нужен для лайков |
-| <img src="https://img.shields.io/badge/-YouTube-FF0000?style=flat-square&logo=youtube&logoColor=white" /> | Поиск, микс по ссылке на видео | Не нужен |
-| <img src="https://img.shields.io/badge/-Spotify-1ED760?style=flat-square&logo=spotify&logoColor=black" /> | Официальный веб-плеер внутри острова, очередь, разделы «Главная», «Моя музыка» и «Плейлисты», громкость | Ваш аккаунт Spotify (Free или Premium) |
-| <img src="https://img.shields.io/badge/-Системный%20плеер-7B61FF?style=flat-square&logoColor=white" /> | Всё, что играет в Windows: браузер, приложения и другие плееры | Не нужен |
-
-<br>
-
-### 🟢 Spotify подробнее
-
-Spotify подключается **через официальный веб-плеер** `open.spotify.com` в Microsoft Edge WebView2. Остров не просит ключи разработчика и не требует Premium.
-
-- Войдите на настоящей странице Spotify: пароль остаётся только у Spotify, сессия хранится на вашем ПК.
-- Остров показывает название, обложку и прогресс, управляет воспроизведением, громкостью и очередью.
-- Кнопка **«Моя музыка»** сама включает ваши «Любимые треки» без показа окна.
-- Библиотека, плейлисты и поиск открываются в панели с официальной страницей Spotify (кнопка со стрелкой).
-- Spotify Desktop и отдельное окно Edge не нужны, WebView2 Runtime уже есть в Windows 10 и 11.
-
-> [!NOTE]
-> Встроенный плеер не отдаёт данные из интерфейса, поэтому у Spotify в острове нет лайка, перемешивания, эквалайзера и собственного списка результатов поиска. Это ограничения самого способа, а не недоработки: подробности в разделе [«Ограничения»](#️-ограничения).
-
-<br>
-
-## 📥 Установка
-
-1. Скачайте `Music-Island-Setup-*.exe` из раздела **[Releases](../../releases)**.
-2. Запустите установщик, выберите папку и дождитесь окончания.
-3. Остров появится на экране, а иконка в трее даст доступ к настройкам.
-
-> [!NOTE]
-> Установщик не подписан цифровой подписью, поэтому Windows SmartScreen может показать окно «Windows защитила ваш компьютер».
-> Нажмите **«Подробнее» → «Выполнить в любом случае»**.
-
-<br>
-
-## 🔑 Вход и настройка
-
-| Площадка | Как подключить |
-|---|---|
-| **Яндекс Музыка** | Остров сам подскажет, как получить токен, и покажет кнопку вставки. Токен хранится только на вашем ПК в зашифрованном виде |
-| **SoundCloud** | Слушать можно без входа. Для лайков вставьте значение cookie `oauth_token` |
-| **Spotify** | Выберите «Spotify», нажмите «Подключить аккаунт» и войдите на странице Spotify |
-| **YouTube, системный плеер** | Вход не нужен |
-
-### 🌍 VPN или прокси для SoundCloud и YouTube
-
-Если сервис недоступен в вашей стране, откройте в трее **«VPN/прокси»** и вставьте ссылку из буфера обмена:
-
-- ссылка на **подписку VPN**: остров сам перебирает серверы hysteria2 из подписки и берёт первый рабочий;
-- ссылка `hysteria2://…`;
-- адрес `socks5://host:port` или `http://host:port`.
-
-Через VPN идут **только SoundCloud и YouTube** (вместе с их входом и капчами), все остальные площадки работают напрямую. Ссылка хранится зашифрованной, VPN включается и выключается одной галочкой в трее.
-
-<br>
-
-## 🛠 Сборка из исходников
-
-Нужны Windows 10/11 и [Node.js](https://nodejs.org) 20+.
+Requires Windows 10/11 and [Node.js](https://nodejs.org) 20+.
 
 ```bash
 git clone https://github.com/luviel19/Music_Island.git
 cd Music_Island
 npm install
-npm run build:spotify   # собирает веб-плеер Spotify (нужен только .NET Framework 4.8 из Windows)
+npm run build:spotify   # builds the Spotify web player helper (needs only .NET Framework 4.8 from Windows)
 npm start
 ```
 
-Установщик:
+Installer: `npm run dist` produces `dist/Music-Island-Setup-*.exe`. For the VPN mode put `hysteria.exe` into `bin/` (it is not part of the repository). Tests: `npm test`. Website checks: `node scripts/check-site.js`.
 
-```bash
-npm run dist
-```
+### Architecture
 
-Готовый `Music-Island-Setup-*.exe` появится в папке `dist/`.
-
-Для режима VPN положите `hysteria.exe` в папку `bin/` (в репозиторий он не входит).
-
-<br>
-
-## 🧩 Архитектура
-
-Каждая площадка подключается как **провайдер** из двух частей:
+Each service is a **provider** made of two parts:
 
 ```
-providers/<id>.js        основной процесс: сеть, токены, доступ к системе
-src/providers/<id>.js    интерфейс: воспроизведение, очередь, управление
+providers/<id>.js        main process: network, tokens, system access
+src/providers/<id>.js    interface: playback, queue, controls
 ```
 
-Контракт описан в `src/providers/registry.js`. Чтобы площадка участвовала в общем поиске, добавьте метод `search(host, запрос)`, а для запуска найденного трека `open(host, трек, список)`. Возможности площадки перечисляются в `caps`: выключенная функция просто не показывается в интерфейсе, и ничего не имитируется.
+The contract is described in `src/providers/registry.js`. A provider lists its abilities in `caps`; a disabled function simply isn't shown and nothing is imitated. To join the cross-service search add `search(host, query)`, and `open(host, track, list)` to play a result.
 
 ```
 .
-├── main.js                  окно, трей, настройки, VPN, перетаскивание
-├── tunnel.js                запуск hysteria2 для VPN
-├── updater.js               проверка новых релизов на GitHub
-├── preload.js               мост между окном и основным процессом
-├── providers/               провайдеры основного процесса (+ мост SMTC на PowerShell)
-├── native/spotify-host/     веб-плеер Spotify на WebView2 (C#, .NET Framework 4.8)
-├── src/                     интерфейс острова
-│   ├── app.js               ядро: состояния, эквалайзеры, волна, меню
-│   ├── search.js            поиск по площадкам и склейка результатов
-│   ├── audio-fx.js          эквалайзер на Web Audio
-│   └── providers/           провайдеры интерфейса
-├── tests/                   проверки логики (npm test)
-└── assets/                  иконки, баннер и скриншоты
+├── main.js                  window, tray, settings, VPN, dragging, screen limits
+├── tunnel.js                hysteria2 launcher for VPN mode
+├── updater.js               new-release check on GitHub
+├── preload.js               bridge between window and main process
+├── providers/               main-process providers (+ SMTC bridge in PowerShell)
+├── native/spotify-host/     Spotify web player on WebView2 (C#, .NET Framework 4.8)
+├── src/                     island interface (app.js, search.js, audio-fx.js, providers/)
+├── docs/                    GitHub Pages site (built by scripts/build-site.js)
+├── promo/                   demo recording tools and publication drafts
+├── scripts/                 site build and checks
+└── tests/                   logic tests (npm test)
 ```
 
 <br>
 
-## ❓ Вопросы и ответы
+## 🤝 Contributing
 
-<details>
-<summary><b>Нужен ли Spotify Premium?</b></summary>
+Bug reports and ideas are welcome in **[Issues](../../issues)**. Pull requests are welcome too: read [CONTRIBUTING.md](CONTRIBUTING.md) first (run `npm test`, keep changes focused, don't add features that can't be verified).
 
-Нет. Остров открывает обычный веб-плеер Spotify, поэтому работает Free (с рекламой, как в браузере) и Premium.
-</details>
+## 👤 Author
 
-<details>
-<summary><b>Почему у Spotify нет лайка и эквалайзера?</b></summary>
+Made by **[luviel19](https://github.com/luviel19)** · [MIT License](LICENSE)
 
-Звук играет сам Spotify внутри встроенной страницы, а состояние лайка и перемешивания она наружу не отдаёт. Остров не показывает функции, которые не может честно выполнить.
-</details>
+## 📜 Disclaimer
 
-<details>
-<summary><b>SoundCloud или YouTube не открываются</b></summary>
-
-Включите VPN или прокси в трее (раздел «VPN или прокси»). Остальные площадки он не затрагивает.
-</details>
-
-<details>
-<summary><b>Остров мешает кликам по окнам под ним</b></summary>
-
-Нет: прозрачные области пропускают клики. В свёрнутом виде остров занимает только свой небольшой «таблеточный» размер.
-</details>
-
-<br>
-
-## ⚠️ Ограничения
-
-- Только Windows 10 и 11.
-- Яндекс Музыка и SoundCloud используют неофициальные API: они могут измениться без предупреждения.
-- Spotify работает через встроенный веб-плеер. Очередь и «Моя музыка» читаются со страницы Spotify и могут перестать работать, если Spotify изменит вёрстку. Реклама в Free-версии играет, как в обычном веб-плеере: остров её не блокирует.
-- Звук и VK не поддерживаются: у первого защита от ботов, у второго закрыт API.
-
-<br>
-
-## 📜 Дисклеймер
-
-Проект независимый и не связан с Яндексом, SoundCloud, YouTube, Spotify и другими упомянутыми сервисами, а также не одобрен ими. Все торговые марки принадлежат их владельцам. Используйте приложение со своим аккаунтом и в личных целях.
-
-<br>
-
-<div align="center">
-
-Сделано с ♪ by **[luviel19](https://github.com/luviel19)**
-
-[MIT License](LICENSE)
-
-</div>
+Independent project, not affiliated with or endorsed by Spotify, Yandex, YouTube, SoundCloud or other mentioned services. All trademarks belong to their owners. Use the app with your own accounts and for personal purposes.

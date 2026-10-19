@@ -1,0 +1,32 @@
+name: Pages check
+
+# Проверяет, что сайт на GitHub Pages открывается. Ничего не публикует.
+on:
+  push:
+    branches: [main]
+    paths: [docs/**]
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Pages to publish and check URLs
+        run: |
+          base=https://luviel19.github.io/Music_Island
+          sleep 60
+          for p in "/" "/ru/" "/sitemap.xml" "/og-image.png" "/promo.gif" "/style.css"; do
+            code=000
+            for i in 1 2 3 4 5; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "$base$p")
+              [ "$code" = 200 ] && break
+              sleep 20
+            done
+            echo "$base$p -> $code"
+            [ "$code" = 200 ] || exit 1
+          done

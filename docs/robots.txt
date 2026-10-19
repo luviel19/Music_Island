@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://luviel19.github.io/Music_Island/sitemap.xml

@@ -1,72 +1,146 @@
 <!doctype html>
-<html lang="ru" data-lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Music Island — Dynamic Island music player for Windows (Spotify, YouTube, SoundCloud, Yandex Music)</title>
-<meta name="description" content="Music Island is an open-source Dynamic Island music player for Windows 10/11 with Spotify, YouTube, SoundCloud and Yandex Music. / Музыкальный Dynamic Island для Windows с открытым кодом.">
-<meta property="og:title" content="Music Island — Dynamic Island music player for Windows">
-<meta property="og:description" content="Spotify, YouTube, SoundCloud and Yandex Music in one floating island. Open source.">
-<meta property="og:image" content="https://luviel19.github.io/Music_Island/banner.svg">
-<link rel="icon" href="icon.png">
-<style>
-:root{--bg:#0b0b14;--fg:#fff;--dim:rgba(255,255,255,.65);--card:#15131f;--a:linear-gradient(90deg,#ffb347,#ff4d94,#7b61ff)}
-@media (prefers-color-scheme:light){:root{--bg:#f6f5fb;--fg:#15131f;--dim:rgba(21,19,31,.65);--card:#fff}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 "Segoe UI",system-ui,sans-serif}
-main{max-width:920px;margin:0 auto;padding:0 16px 64px}
-header{text-align:center;padding:40px 0 8px}
-header img{width:100%;border-radius:18px}
-.lang{position:fixed;top:12px;right:12px;display:flex;gap:6px;z-index:5}
-.lang button{border:1px solid var(--dim);background:var(--card);color:var(--fg);border-radius:20px;padding:4px 12px;cursor:pointer}
-.btn{display:inline-block;margin:20px 6px;padding:14px 28px;border-radius:30px;background:var(--a);color:#fff;font-weight:700;text-decoration:none}
-.btn.o{background:none;border:2px solid var(--dim);color:var(--fg)}
-h2{margin-top:48px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
-.card{background:var(--card);border-radius:16px;padding:16px 18px}
-.card b{display:block;margin-bottom:4px}
-.shots{text-align:center}
-.shots img{max-width:100%;border-radius:14px;margin:8px 0}
-.dim{color:var(--dim);text-align:center;font-size:14px}
-[data-l]{display:none}
-html[data-lang=ru] [data-l=ru],html[data-lang=en] [data-l=en]{display:revert}
-</style>
+<title>Music Island — Free Dynamic Island for Windows | Spotify &amp; Yandex Music</title>
+<meta name="description" content="Music Island is a free, open-source Dynamic Island music player for Windows 10/11. Control Spotify, Yandex Music, YouTube and SoundCloud in a beautiful floating desktop widget.">
+<link rel="canonical" href="https://luviel19.github.io/Music_Island/">
+<link rel="alternate" hreflang="en" href="https://luviel19.github.io/Music_Island/">
+<link rel="alternate" hreflang="ru" href="https://luviel19.github.io/Music_Island/ru/">
+<link rel="alternate" hreflang="x-default" href="https://luviel19.github.io/Music_Island/">
+<meta name="theme-color" content="#0a0a12">
+<meta name="author" content="luviel19">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Music Island">
+<meta property="og:title" content="Music Island — Free Dynamic Island for Windows | Spotify &amp; Yandex Music">
+<meta property="og:description" content="Music Island is a free, open-source Dynamic Island music player for Windows 10/11. Control Spotify, Yandex Music, YouTube and SoundCloud in a beautiful floating desktop widget.">
+<meta property="og:url" content="https://luviel19.github.io/Music_Island/">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://luviel19.github.io/Music_Island/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Music Island: expanded Dynamic Island music player on a dark gradient">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Music Island — Free Dynamic Island for Windows | Spotify &amp; Yandex Music">
+<meta name="twitter:description" content="Music Island is a free, open-source Dynamic Island music player for Windows 10/11. Control Spotify, Yandex Music, YouTube and SoundCloud in a beautiful floating desktop widget.">
+<meta name="twitter:image" content="https://luviel19.github.io/Music_Island/og-image.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Music Island","alternateName":["Music Island for Windows","Dynamic Island для Windows"],"description":"Music Island is a free, open-source Dynamic Island music player for Windows 10/11. Control Spotify, Yandex Music, YouTube and SoundCloud in a beautiful floating desktop widget.","applicationCategory":"MultimediaApplication","operatingSystem":"Windows 10, Windows 11","softwareVersion":"0.2.10","license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,"url":"https://luviel19.github.io/Music_Island/","downloadUrl":"https://github.com/luviel19/Music_Island/releases/latest","image":"https://luviel19.github.io/Music_Island/og-image.png","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"luviel19","url":"https://github.com/luviel19"},"codeRepository":"https://github.com/luviel19/Music_Island","inLanguage":["en","ru"]},{"@context":"https://schema.org","@type":"FAQPage","inLanguage":"en","mainEntity":[{"@type":"Question","name":"Is Music Island free?","acceptedAnswer":{"@type":"Answer","text":"Yes. It is free and open source under the MIT license. The app has no ads and no paid features."}},{"@type":"Question","name":"Do I need Spotify Premium?","acceptedAnswer":{"@type":"Answer","text":"No. The island embeds the official Spotify web player, so Free and Premium accounts both work. Free-plan ads play as in a browser; the island does not block them."}},{"@type":"Question","name":"Does it work on Windows 10 and Windows 11?","acceptedAnswer":{"@type":"Answer","text":"Yes, both 64-bit versions. It needs the Microsoft Edge WebView2 Runtime for Spotify, which is part of current Windows installations."}},{"@type":"Question","name":"Why is there no like or equalizer for Spotify?","acceptedAnswer":{"@type":"Answer","text":"Audio plays inside the embedded Spotify page, which does not expose like or shuffle state. The island only shows functions it can perform honestly."}},{"@type":"Question","name":"Is it safe? The installer is not signed.","acceptedAnswer":{"@type":"Answer","text":"The source code is open, the app has no keys of its own, and sign-in happens on the official service pages. The installer is not code-signed, so SmartScreen may warn. Download only from the official releases and verify the SHA-256 hash."}},{"@type":"Question","name":"SoundCloud or YouTube do not open","acceptedAnswer":{"@type":"Answer","text":"If a service is blocked in your country, enable VPN or proxy in the tray menu. It is used only for SoundCloud and YouTube."}},{"@type":"Question","name":"Is it affiliated with Spotify, Yandex, YouTube or SoundCloud?","acceptedAnswer":{"@type":"Answer","text":"No. It is an independent project. All trademarks belong to their owners."}}]}]</script>
 </head>
 <body>
-<div class="lang"><button onclick="L('ru')">RU</button><button onclick="L('en')">EN</button></div>
-<main>
-<header>
-<img src="banner.svg" alt="Music Island">
-<p data-l="en"><b>An open-source Dynamic Island music player for Windows 10/11</b> with Spotify, YouTube, SoundCloud and Yandex Music.</p>
-<p data-l="ru"><b>Музыкальный «Dynamic Island» для Windows 10/11</b> с открытым кодом: Spotify, YouTube, SoundCloud и Яндекс Музыка.</p>
-<a class="btn" href="https://github.com/luviel19/Music_Island/releases/latest"><span data-l="en">⬇ Download for Windows</span><span data-l="ru">⬇ Скачать для Windows</span></a>
-<a class="btn o" href="https://github.com/luviel19/Music_Island">GitHub</a>
-</header>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav"><div class="wrap">
+  <a class="brand" href="./"><img src="favicon-48.png" width="30" height="30" alt="">Music Island</a>
+  <nav aria-label="Sections">
+    <a class="opt" href="#features">Features</a><a class="opt" href="#services">Services</a><a class="opt" href="#gallery">Gallery</a><a class="opt" href="#faq">FAQ</a>
+    <a href="#download">Download</a>
+    <a class="lang" href="ru/" hreflang="ru" lang="ru">RU</a>
+  </nav>
+</div></header>
 
-<div class="shots"><video src="promo.mp4" poster="screenshot.png" width="720" controls muted loop playsinline style="max-width:100%;border-radius:14px"></video><br><img src="screenshot.png" width="560" alt="Music Island expanded"><br><img src="screenshot-compact.png" width="380" alt="Music Island compact"></div>
+<main id="main" class="wrap">
+<section class="hero" aria-labelledby="h1">
+  <div class="island" tabindex="0" role="img" aria-label="Animated demo of the Music Island interface: collapsed island, expanding on hover, waveform, next track and queue with Spotify">
+    <span class="cv"></span>
+    <span class="t">Night Drive<small>Aurora Lane (demo)</small></span>
+    <span class="bars"><i></i><i></i><i></i><i></i></span>
+    <span class="more"><span class="w"><i class="p" style="height:6px"></i><i class="p" style="height:17px"></i><i class="p" style="height:22px"></i><i class="p" style="height:18px"></i><i class="p" style="height:10px"></i><i class="p" style="height:9px"></i><i class="p" style="height:9px"></i><i class="p" style="height:7px"></i><i class="p" style="height:9px"></i><i class="" style="height:6px"></i><i class="" style="height:14px"></i><i class="" style="height:21px"></i><i class="" style="height:20px"></i><i class="" style="height:12px"></i><i class="" style="height:13px"></i><i class="" style="height:21px"></i><i class="" style="height:21px"></i><i class="" style="height:14px"></i><i class="" style="height:6px"></i><i class="" style="height:10px"></i><i class="" style="height:8px"></i><i class="" style="height:8px"></i><i class="" style="height:8px"></i><i class="" style="height:10px"></i><i class="" style="height:18px"></i><i class="" style="height:21px"></i><i class="" style="height:16px"></i><i class="" style="height:7px"></i></span><span class="c"><span></span><b></b><span class="n"></span></span></span>
+  </div>
+  <h1 id="h1">A free <span class="grad">Dynamic Island</span> music player for Windows</h1>
+  <p class="lead">Music Island is a small floating island on your desktop. It shows what is playing, expands on hover and controls Spotify, Yandex Music, YouTube and SoundCloud. Open source, MIT license, Windows 10/11.</p>
+  <div class="cta">
+    <a class="btn dl-link" href="https://github.com/luviel19/Music_Island/releases/latest">⬇ Download for Windows</a>
+    <a class="btn ghost" href="https://github.com/luviel19/Music_Island">View on GitHub</a>
+    <a class="btn ghost" href="https://github.com/luviel19/Music_Island/releases">All releases</a>
+  </div>
+  <p class="meta">Version <span id="ver">0.2.10</span> · Windows 10/11 x64 · unsigned installer (SmartScreen may warn) · MIT</p>
+  <div class="badges"><span>Open source</span><span>MIT license</span><span>No ads in the app</span><span>Windows 10 / 11</span></div>
+</section>
 
-<h2 data-l="en">Features</h2><h2 data-l="ru">Возможности</h2>
-<div class="grid">
-<div class="card"><b>Spotify</b><span data-l="en">Official web player inside the island (WebView2). Free or Premium, no developer keys.</span><span data-l="ru">Официальный веб-плеер внутри острова (WebView2). Free или Premium, ключи разработчика не нужны.</span></div>
-<div class="card"><b data-l="en">All sources</b><b data-l="ru">Все площадки</b><span data-l="en">Yandex Music, SoundCloud, YouTube, Spotify and any Windows media player, with one search across them.</span><span data-l="ru">Яндекс Музыка, SoundCloud, YouTube, Spotify и любой плеер Windows, один поиск по всем.</span></div>
-<div class="card"><b data-l="en">Waveform and equalizer</b><b data-l="ru">Волна и эквалайзер</b><span data-l="en">Clickable waveform progress, 10-band equalizer, colours taken from the cover.</span><span data-l="ru">Волна-прогресс с перемоткой, эквалайзер на 10 полос, цвета из обложки.</span></div>
-<div class="card"><b data-l="en">Always on screen</b><b data-l="ru">Всегда на экране</b><span data-l="en">Cannot be dragged off screen, snaps into a corner, survives Win+D.</span><span data-l="ru">Не уходит за экран, встаёт в угол, не пропадает по Win+D.</span></div>
-</div>
+<section class="demo" aria-labelledby="demo-h">
+  <h2 id="demo-h">See it in action</h2>
+  <p class="sub" style="margin-inline:auto">This is the real island interface running with demo tracks: hover to expand, move through the waveform, switch tracks and open the queue.</p>
+  <div class="frame"><img src="promo.gif" width="540" height="360" alt="Animated demo of the Music Island interface: collapsed island, expanding on hover, waveform, next track and queue with Spotify"></div>
+  <p class="cap">Demo with made-up tracks. Recorded from the actual app interface.</p>
+</section>
 
-<h2 data-l="en">Install</h2><h2 data-l="ru">Установка</h2>
-<p data-l="en">Download <code>Music-Island-Setup-*.exe</code> from <a href="https://github.com/luviel19/Music_Island/releases/latest">Releases</a> and run it. The installer is unsigned, so SmartScreen may warn: choose "More info, then Run anyway".</p>
-<p data-l="ru">Скачайте <code>Music-Island-Setup-*.exe</code> из <a href="https://github.com/luviel19/Music_Island/releases/latest">Releases</a> и запустите. Установщик не подписан, SmartScreen может предупредить: «Подробнее → Выполнить в любом случае».</p>
+<section id="features" aria-labelledby="feat-h">
+  <h2 id="feat-h">What you get</h2><p class="sub">Everything here is implemented in the current release.</p>
+  <div class="grid"><div class="card"><h3>Floating island</h3><p>Always on top of your windows, expands on hover, never leaves the screen and can sit in the very corner. Click-through where it is transparent.</p></div><div class="card"><h3>Several services, one island</h3><p>Spotify, Yandex Music, SoundCloud, YouTube and any system media player. Switch from the island or the tray.</p></div><div class="card"><h3>Search across services</h3><p>One query searches Yandex Music, SoundCloud and YouTube. The same song is merged into one row with service icons.</p></div><div class="card"><h3>Waveform progress</h3><p>Bars that follow the shape of the song. Click to seek. Colours adapt to the cover art.</p></div><div class="card"><h3>10-band equalizer</h3><p>For Yandex Music and SoundCloud: manual bands, presets and a colourful grid in the island background.</p></div><div class="card"><h3>Queue, likes, media keys</h3><p>Browse the next tracks, like songs (Yandex Music, SoundCloud), use global media keys and the tray menu. Autostart with Windows.</p></div></div>
+</section>
 
-<h2 data-l="en">Spotify limitations</h2><h2 data-l="ru">Ограничения Spotify</h2>
-<p data-l="en">Spotify runs through the official web player, which does not expose like or shuffle state, so the island does not fake them. The queue and "My music" are read from the page and may break if Spotify changes its layout. Ads in the Free tier play as in a normal browser; the island does not block them.</p>
-<p data-l="ru">Spotify работает через официальный веб-плеер, который не отдаёт состояние лайка и перемешивания, поэтому остров их не имитирует. Очередь и «Моя музыка» читаются со страницы и могут перестать работать, если Spotify изменит вёрстку. Реклама в Free играет как в браузере, остров её не блокирует.</p>
+<section id="services" aria-labelledby="svc-h">
+  <h2 id="svc-h">Supported services</h2><p class="sub">What works depends on what each service allows. The table shows what is really available in the island.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th scope="col">Feature</th><th scope="col">Spotify</th><th scope="col">Yandex Music</th><th scope="col">YouTube</th><th scope="col">SoundCloud</th><th scope="col">System player</th></tr></thead>
+    <tbody><tr><th scope="row" style="text-align:left;font-weight:600;background:none">Play / pause / next / previous / seek</th><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td></tr><tr><th scope="row" style="text-align:left;font-weight:600;background:none">Track, cover and progress in the island</th><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td></tr><tr><th scope="row" style="text-align:left;font-weight:600;background:none">Queue inside the island</th><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="n" aria-label="no">—</span></td></tr><tr><th scope="row" style="text-align:left;font-weight:600;background:none">Volume control</th><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="n" aria-label="no">—</span></td></tr><tr><th scope="row" style="text-align:left;font-weight:600;background:none">Like</th><td><span class="n" aria-label="no">—</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="n" aria-label="no">—</span></td><td><span class="p" aria-label="partly">◐</span></td><td><span class="n" aria-label="no">—</span></td></tr><tr><th scope="row" style="text-align:left;font-weight:600;background:none">Shuffle</th><td><span class="n" aria-label="no">—</span></td><td><span class="p" aria-label="partly">◐</span></td><td><span class="n" aria-label="no">—</span></td><td><span class="n" aria-label="no">—</span></td><td><span class="n" aria-label="no">—</span></td></tr><tr><th scope="row" style="text-align:left;font-weight:600;background:none">10-band equalizer</th><td><span class="n" aria-label="no">—</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="n" aria-label="no">—</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="n" aria-label="no">—</span></td></tr><tr><th scope="row" style="text-align:left;font-weight:600;background:none">Search from the island</th><td><span class="p" aria-label="partly">◐</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="y" aria-label="yes">✓</span></td><td><span class="n" aria-label="no">—</span></td></tr><tr><th scope="row" style="text-align:left;font-weight:600;background:none">Sign-in</th><td>Your Spotify account</td><td>OAuth token</td><td>Not needed</td><td>Optional (for likes)</td><td>Not needed</td></tr></tbody>
+  </table></div>
+  <p class="cap"><b class="y">✓</b> works · <b class="p">◐</b> partly (Spotify: search opens the official page in a panel; Yandex Music: shuffle in Favorites only; SoundCloud: likes need sign-in) · <b class="n">—</b> not available</p>
+</section>
 
-<p class="dim">MIT · <span data-l="en">Not affiliated with Spotify, YouTube, SoundCloud or Yandex.</span><span data-l="ru">Проект независимый и не связан со Spotify, YouTube, SoundCloud и Яндексом.</span></p>
+<section aria-labelledby="sp-h">
+  <h2 id="sp-h">Spotify and Yandex Music</h2><p class="sub">The two main services, and how they connect.</p>
+  <div class="two">
+    <div class="card"><h3>Spotify: the official web player</h3><p>The island embeds the official open.spotify.com web player in Microsoft Edge WebView2. You sign in on the real Spotify page (Free or Premium), the password stays with Spotify. No Web API, no Client ID, no developer keys, no cookie extraction and no ad blocking. Playback is controlled through Windows media controls, the queue is read from the page, volume is the Windows audio session of the player. Ads in the Free plan play as in a normal browser.</p></div>
+    <div class="card"><h3>Yandex Music: My Wave and Favorites</h3><p>My Wave with mood and activity tuning, Favorites, likes, queue, equalizer and search. Sign-in uses an OAuth token that is stored encrypted on your PC. The Yandex API used here is unofficial and may change.</p></div>
+  </div>
+  <p class="note" style="margin-top:14px">Spotify in the island has no like, shuffle or equalizer: the embedded web player does not expose them, so the island does not fake them.</p>
+</section>
+
+<section id="gallery" aria-labelledby="gal-h">
+  <h2 id="gal-h">Gallery</h2><p class="sub">Screenshots of the island. The last two use demo tracks.</p>
+  <div class="gallery"><figure><img src="screenshot.png" loading="lazy" alt="Music Island expanded: cover, waveform and controls"><figcaption>Expanded island</figcaption></figure><figure><img src="screenshot-compact.png" loading="lazy" alt="Music Island in compact mode"><figcaption>Compact island</figcaption></figure><figure><img src="shot-expanded.png" loading="lazy" alt="Music Island with Spotify, expanded, with equalizer grid in the cover colours"><figcaption>Expanded with Spotify (demo)</figcaption></figure><figure><img src="shot-queue.png" loading="lazy" alt="Music Island queue with Spotify logos"><figcaption>Queue (demo)</figcaption></figure></div>
+</section>
+
+<section id="download" aria-labelledby="dl-h">
+  <div class="dl">
+    <h2 id="dl-h">Download Music Island</h2>
+    <p class="sub" style="margin-inline:auto">Free. Windows 10 or 11, 64-bit. The Microsoft Edge WebView2 Runtime (included in modern Windows) is needed for Spotify.</p>
+    <p><a class="btn dl-link" href="https://github.com/luviel19/Music_Island/releases/latest">⬇ Download the latest installer</a></p>
+    <p class="meta"><span id="size"></span></p>
+    <ol style="text-align:left;max-width:560px;margin:18px auto;color:var(--dim)"><li>Download <code>Music-Island-Setup-*.exe</code> from the latest release.</li><li>Run it and choose the folder.</li><li>The island appears on the screen, the tray icon opens settings.</li></ol>
+    <p class="note" style="text-align:left;max-width:720px;margin:0 auto">The installer is not digitally signed, so Windows SmartScreen may show “Windows protected your PC”. Check that the file comes from the official release page and compare its SHA-256 with the value in the release notes, then choose “More info → Run anyway”. Do not turn off Windows Defender. Details: <a href="https://github.com/luviel19/Music_Island/blob/main/SECURITY.md">SECURITY.md</a>.</p>
+  </div>
+</section>
+
+<section id="faq" aria-labelledby="faq-h">
+  <h2 id="faq-h">Questions and answers</h2>
+  <details><summary>Is Music Island free?</summary><p>Yes. It is free and open source under the MIT license. The app has no ads and no paid features.</p></details>
+  <details><summary>Do I need Spotify Premium?</summary><p>No. The island embeds the official Spotify web player, so Free and Premium accounts both work. Free-plan ads play as in a browser; the island does not block them.</p></details>
+  <details><summary>Does it work on Windows 10 and Windows 11?</summary><p>Yes, both 64-bit versions. It needs the Microsoft Edge WebView2 Runtime for Spotify, which is part of current Windows installations.</p></details>
+  <details><summary>Why is there no like or equalizer for Spotify?</summary><p>Audio plays inside the embedded Spotify page, which does not expose like or shuffle state. The island only shows functions it can perform honestly.</p></details>
+  <details><summary>Is it safe? The installer is not signed.</summary><p>The source code is open, the app has no keys of its own, and sign-in happens on the official service pages. The installer is not code-signed, so SmartScreen may warn. Download only from the official releases and verify the SHA-256 hash.</p></details>
+  <details><summary>SoundCloud or YouTube do not open</summary><p>If a service is blocked in your country, enable VPN or proxy in the tray menu. It is used only for SoundCloud and YouTube.</p></details>
+  <details><summary>Is it affiliated with Spotify, Yandex, YouTube or SoundCloud?</summary><p>No. It is an independent project. All trademarks belong to their owners.</p></details>
+</section>
 </main>
+
+<footer><div class="wrap">
+  <p>Made by <a href="https://github.com/luviel19">luviel19</a> · <a href="https://github.com/luviel19/Music_Island">Source code</a> · <a href="https://github.com/luviel19/Music_Island/issues">Report an issue</a> · <a href="https://github.com/luviel19/Music_Island/blob/main/LICENSE">MIT License</a></p>
+  <p>Not affiliated with Spotify, Yandex, YouTube or SoundCloud.</p>
+</div></footer>
+
 <script>
-function L(l){document.documentElement.dataset.lang=l;document.documentElement.lang=l;try{localStorage.lang=l}catch(e){}}
-var s;try{s=localStorage.lang}catch(e){}
-L(s||((navigator.language||'').indexOf('ru')===0?'ru':'en'));
+// Необязательное улучшение: показать актуальную версию и прямую ссылку на установщик. Без JS работает ссылка на страницу релиза.
+(function () {
+  try {
+    fetch('https://api.github.com/repos/luviel19/Music_Island/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !j.tag_name) return;
+        var a = (j.assets || []).filter(function (x) { return /^Music-Island-Setup-.*\.exe$/.test(x.name); })[0];
+        document.getElementById('ver').textContent = String(j.tag_name).replace(/^v/, '');
+        if (a) {
+          document.querySelectorAll('.dl-link').forEach(function (el) { el.href = a.browser_download_url; });
+          document.getElementById('size').textContent = a.name + ' · ' + Math.round(a.size / 1048576) + ' MB';
+        }
+      }).catch(function () {});
+  } catch (e) {}
+})();
 </script>
 </body>
 </html>
