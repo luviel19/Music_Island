@@ -9,15 +9,15 @@ Spotify, Яндекс Музыка, YouTube и SoundCloud в одном плав
 
 [English](README.md) · **Русский**
 
-[![Скачать](https://img.shields.io/badge/%E2%AC%87%20%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-%D0%BF%D0%BE%D1%81%D0%BB%D0%B5%D0%B4%D0%BD%D0%B8%D0%B9%20%D1%80%D0%B5%D0%BB%D0%B8%D0%B7-ff4d94?style=for-the-badge)](../../releases/latest)
+[![Скачать](https://img.shields.io/badge/%E2%AC%87%20%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-%D0%BF%D0%BE%D1%81%D0%BB%D0%B5%D0%B4%D0%BD%D0%B8%D0%B9%20%D1%80%D0%B5%D0%BB%D0%B8%D0%B7-ff4d94?style=for-the-badge)](https://github.com/luviel19/Music_Island/releases/latest)
 [![Сайт](https://img.shields.io/badge/%D0%A1%D0%B0%D0%B9%D1%82-luviel19.github.io-7B61FF?style=for-the-badge)](https://luviel19.github.io/Music_Island/ru/)
-[![Релизы](https://img.shields.io/badge/%D0%A0%D0%B5%D0%BB%D0%B8%D0%B7%D1%8B-%D0%B2%D1%81%D0%B5%20%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D0%B8-ffb347?style=for-the-badge)](../../releases)
+[![Релизы](https://img.shields.io/badge/%D0%A0%D0%B5%D0%BB%D0%B8%D0%B7%D1%8B-%D0%B2%D1%81%D0%B5%20%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D0%B8-ffb347?style=for-the-badge)](https://github.com/luviel19/Music_Island/releases)
 
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows11&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron-44-47848F?logo=electron&logoColor=white)
-[![Версия](https://img.shields.io/github/v/release/luviel19/Music_Island?color=ffb347&label=%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D1%8F)](../../releases/latest)
+[![Версия](https://img.shields.io/github/v/release/luviel19/Music_Island?color=ffb347&label=%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D1%8F)](https://github.com/luviel19/Music_Island/releases/latest)
 [![Лицензия](https://img.shields.io/github/license/luviel19/Music_Island?color=ff4d94&label=%D0%BB%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F)](LICENSE)
-[![CI](https://github.com/luviel19/Music_Island/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
+[![CI](https://github.com/luviel19/Music_Island/actions/workflows/ci.yml/badge.svg)](https://github.com/luviel19/Music_Island/actions/workflows/ci.yml)
 
 <br>
 
@@ -38,7 +38,7 @@ Music Island — маленький «остров» в духе Dynamic Island 
 - **Бесплатно и с открытым кодом**, лицензия MIT. В приложении нет рекламы, нет наших аккаунтов и телеметрии.
 - **Не мешает:** прозрачные области пропускают клики, остров не уходит за экран и встаёт в самый угол.
 
-**[⬇ Скачать последний релиз](../../releases/latest)** · Windows 10/11 x64 · установщик без цифровой подписи (см. [безопасность](#-безопасность-и-проверка-загрузки)).
+**[⬇ Скачать последний релиз](https://github.com/luviel19/Music_Island/releases/latest)** · Windows 10/11 x64 · установщик без цифровой подписи (см. [безопасность](#-безопасность-и-проверка-загрузки)).
 
 <br>
 
@@ -75,7 +75,7 @@ Music Island — маленький «остров» в духе Dynamic Island 
 
 ### 🟢 Spotify подробнее
 
-Spotify подключается **через официальный веб-плеер** `open.spotify.com` в Microsoft Edge WebView2 (вспомогательный процесс `SpotifyHost.exe`, исходники в [`native/spotify-host`](native/spotify-host)).
+Spotify подключается **через официальный веб-плеер** `open.spotify.com` в Microsoft Edge WebView2 (вспомогательный процесс `SpotifyHost.exe`, исходники в [`native/spotify-host`](https://github.com/luviel19/Music_Island/tree/main/native/spotify-host)).
 
 - Вы входите на настоящей странице Spotify: пароль остаётся только у Spotify, сессия хранится на вашем ПК.
 - Остров показывает название, обложку и прогресс, управляет воспроизведением через медиа-команды Windows. Громкость — звуковая сессия плеера в Windows.
@@ -104,7 +104,7 @@ Spotify подключается **через официальный веб-пл
 
 ## 📥 Установка
 
-1. Скачайте `Music-Island-Setup-*.exe` из **[последнего релиза](../../releases/latest)**.
+1. Скачайте `Music-Island-Setup-*.exe` из **[последнего релиза](https://github.com/luviel19/Music_Island/releases/latest)**.
 2. Запустите установщик, выберите папку и дождитесь окончания.
 3. Остров появится на экране, а иконка в трее даст доступ к настройкам.
 
@@ -168,7 +168,7 @@ Spotify подключается **через официальный веб-пл
 
 ## 🔒 Безопасность и проверка загрузки
 
-- Установщик **не подписан цифровой подписью**, SmartScreen может предупредить о неизвестном издателе. Скачивайте только из [официальных релизов](../../releases) и сверяйте SHA-256 из описания релиза:
+- Установщик **не подписан цифровой подписью**, SmartScreen может предупредить о неизвестном издателе. Скачивайте только из [официальных релизов](https://github.com/luviel19/Music_Island/releases) и сверяйте SHA-256 из описания релиза:
 
   ```powershell
   Get-FileHash .\Music-Island-Setup-0.2.10.exe -Algorithm SHA256
@@ -231,7 +231,7 @@ src/providers/<id>.js    интерфейс: воспроизведение, о�
 
 ## 🤝 Участие в проекте
 
-Сообщения об ошибках и идеи приветствуются в **[Issues](../../issues)**. Pull Request тоже можно: сначала прочитайте [CONTRIBUTING.md](CONTRIBUTING.md) (запускайте `npm test`, делайте точечные изменения, не добавляйте функции, которые нельзя проверить).
+Сообщения об ошибках и идеи приветствуются в **[Issues](https://github.com/luviel19/Music_Island/issues)**. Pull Request тоже можно: сначала прочитайте [CONTRIBUTING.md](CONTRIBUTING.md) (запускайте `npm test`, делайте точечные изменения, не добавляйте функции, которые нельзя проверить).
 
 ## 👤 Автор
 

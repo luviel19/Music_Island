@@ -9,15 +9,15 @@ Control Spotify, Yandex Music, YouTube and SoundCloud from one floating desktop 
 
 **English** · [Русский](README.ru.md)
 
-[![Download](https://img.shields.io/badge/%E2%AC%87%20Download-latest%20release-ff4d94?style=for-the-badge)](../../releases/latest)
+[![Download](https://img.shields.io/badge/%E2%AC%87%20Download-latest%20release-ff4d94?style=for-the-badge)](https://github.com/luviel19/Music_Island/releases/latest)
 [![Website](https://img.shields.io/badge/Website-luviel19.github.io-7B61FF?style=for-the-badge)](https://luviel19.github.io/Music_Island/)
-[![Releases](https://img.shields.io/badge/Releases-all%20versions-ffb347?style=for-the-badge)](../../releases)
+[![Releases](https://img.shields.io/badge/Releases-all%20versions-ffb347?style=for-the-badge)](https://github.com/luviel19/Music_Island/releases)
 
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows11&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron-44-47848F?logo=electron&logoColor=white)
-[![Release](https://img.shields.io/github/v/release/luviel19/Music_Island?color=ffb347)](../../releases/latest)
+[![Release](https://img.shields.io/github/v/release/luviel19/Music_Island?color=ffb347)](https://github.com/luviel19/Music_Island/releases/latest)
 [![License](https://img.shields.io/github/license/luviel19/Music_Island?color=ff4d94)](LICENSE)
-[![CI](https://github.com/luviel19/Music_Island/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
+[![CI](https://github.com/luviel19/Music_Island/actions/workflows/ci.yml/badge.svg)](https://github.com/luviel19/Music_Island/actions/workflows/ci.yml)
 
 <br>
 
@@ -38,7 +38,7 @@ Music Island is a small always-on-top «island» in the spirit of Apple's Dynami
 - **Free and open source** under the MIT license. No ads in the app, no accounts with us, no telemetry.
 - **Stays out of the way:** click-through where transparent, never leaves the screen, snaps into the very corner.
 
-**[⬇ Download the latest release](../../releases/latest)** · Windows 10/11 x64 · the installer is not code-signed (see [Security](#-security-and-verifying-the-download)).
+**[⬇ Download the latest release](https://github.com/luviel19/Music_Island/releases/latest)** · Windows 10/11 x64 · the installer is not code-signed (see [Security](#-security-and-verifying-the-download)).
 
 <br>
 
@@ -75,7 +75,7 @@ The table lists only what works in the current release. A missing function is hi
 
 ### 🟢 Spotify in detail
 
-Spotify is connected **through the official web player** `open.spotify.com` embedded in Microsoft Edge WebView2 (a helper process `SpotifyHost.exe`, source in [`native/spotify-host`](native/spotify-host)).
+Spotify is connected **through the official web player** `open.spotify.com` embedded in Microsoft Edge WebView2 (a helper process `SpotifyHost.exe`, source in [`native/spotify-host`](https://github.com/luviel19/Music_Island/tree/main/native/spotify-host)).
 
 - You sign in on the real Spotify page. The password stays with Spotify, the session is stored on your PC.
 - The island shows title, cover and progress and controls playback through Windows media controls. Volume is the Windows audio session of the player.
@@ -104,7 +104,7 @@ Spotify is connected **through the official web player** `open.spotify.com` embe
 
 ## 📥 Installation
 
-1. Download `Music-Island-Setup-*.exe` from the **[latest release](../../releases/latest)**.
+1. Download `Music-Island-Setup-*.exe` from the **[latest release](https://github.com/luviel19/Music_Island/releases/latest)**.
 2. Run the installer, choose a folder and wait for it to finish.
 3. The island appears on the screen. The tray icon opens the settings.
 
@@ -168,7 +168,7 @@ No. It is an independent project and all trademarks belong to their owners.
 
 ## 🔒 Security and verifying the download
 
-- The installer is **not code-signed**. SmartScreen may warn about unknown publishers. Download only from the [official releases](../../releases) and compare the SHA-256 hash printed in the release notes:
+- The installer is **not code-signed**. SmartScreen may warn about unknown publishers. Download only from the [official releases](https://github.com/luviel19/Music_Island/releases) and compare the SHA-256 hash printed in the release notes:
 
   ```powershell
   Get-FileHash .\Music-Island-Setup-0.2.10.exe -Algorithm SHA256
@@ -231,7 +231,7 @@ The contract is described in `src/providers/registry.js`. A provider lists its a
 
 ## 🤝 Contributing
 
-Bug reports and ideas are welcome in **[Issues](../../issues)**. Pull requests are welcome too: read [CONTRIBUTING.md](CONTRIBUTING.md) first (run `npm test`, keep changes focused, don't add features that can't be verified).
+Bug reports and ideas are welcome in **[Issues](https://github.com/luviel19/Music_Island/issues)**. Pull requests are welcome too: read [CONTRIBUTING.md](CONTRIBUTING.md) first (run `npm test`, keep changes focused, don't add features that can't be verified).
 
 ## 👤 Author
 

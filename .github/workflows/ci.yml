@@ -41,11 +41,16 @@ jobs:
 
   links:
     name: Documentation links
+    # Docker-действие lychee работает только на Linux-раннере (остальные задания идут на Windows)
     runs-on: ubuntu-latest
-    continue-on-error: true # внешние сайты бывают недоступны: результат информационный
     steps:
       - uses: actions/checkout@v4
+      # Адреса luviel19.github.io не проверяются здесь: новые страницы сайта появляются только после merge,
+      # их доступность проверяет pages-check.yml. Остальные ссылки (в том числе на GitHub) проверяются всегда.
       - uses: lycheeverse/lychee-action@v2
         with:
-          args: --no-progress --accept 200,206,403,429 --exclude 'localhost' --exclude 'img.shields.io' --exclude 'github.com/luviel19/Music_Island/(actions|releases)' README.md README.ru.md SECURITY.md CONTRIBUTING.md
+          args: >-
+            --no-progress --max-retries 3 --accept 200,206,403,429
+            --exclude 'localhost' --exclude '^https://img\.shields\.io/' --exclude '^https://luviel19\.github\.io/'
+            README.md README.ru.md SECURITY.md CONTRIBUTING.md promo/marketing/*.md
           fail: true
