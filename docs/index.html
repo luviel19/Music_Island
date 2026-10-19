@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru" data-lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Music Island — Dynamic Island music player for Windows (Spotify, YouTube, SoundCloud, Yandex Music)</title>
+<meta name="description" content="Music Island is an open-source Dynamic Island music player for Windows 10/11 with Spotify, YouTube, SoundCloud and Yandex Music. / Музыкальный Dynamic Island для Windows с открытым кодом.">
+<meta property="og:title" content="Music Island — Dynamic Island music player for Windows">
+<meta property="og:description" content="Spotify, YouTube, SoundCloud and Yandex Music in one floating island. Open source.">
+<meta property="og:image" content="https://luviel19.github.io/Music_Island/banner.svg">
+<link rel="icon" href="icon.png">
+<style>
+:root{--bg:#0b0b14;--fg:#fff;--dim:rgba(255,255,255,.65);--card:#15131f;--a:linear-gradient(90deg,#ffb347,#ff4d94,#7b61ff)}
+@media (prefers-color-scheme:light){:root{--bg:#f6f5fb;--fg:#15131f;--dim:rgba(21,19,31,.65);--card:#fff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 "Segoe UI",system-ui,sans-serif}
+main{max-width:920px;margin:0 auto;padding:0 16px 64px}
+header{text-align:center;padding:40px 0 8px}
+header img{width:100%;border-radius:18px}
+.lang{position:fixed;top:12px;right:12px;display:flex;gap:6px;z-index:5}
+.lang button{border:1px solid var(--dim);background:var(--card);color:var(--fg);border-radius:20px;padding:4px 12px;cursor:pointer}
+.btn{display:inline-block;margin:20px 6px;padding:14px 28px;border-radius:30px;background:var(--a);color:#fff;font-weight:700;text-decoration:none}
+.btn.o{background:none;border:2px solid var(--dim);color:var(--fg)}
+h2{margin-top:48px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.card{background:var(--card);border-radius:16px;padding:16px 18px}
+.card b{display:block;margin-bottom:4px}
+.shots{text-align:center}
+.shots img{max-width:100%;border-radius:14px;margin:8px 0}
+.dim{color:var(--dim);text-align:center;font-size:14px}
+[data-l]{display:none}
+html[data-lang=ru] [data-l=ru],html[data-lang=en] [data-l=en]{display:revert}
+</style>
+</head>
+<body>
+<div class="lang"><button onclick="L('ru')">RU</button><button onclick="L('en')">EN</button></div>
+<main>
+<header>
+<img src="banner.svg" alt="Music Island">
+<p data-l="en"><b>An open-source Dynamic Island music player for Windows 10/11</b> with Spotify, YouTube, SoundCloud and Yandex Music.</p>
+<p data-l="ru"><b>Музыкальный «Dynamic Island» для Windows 10/11</b> с открытым кодом: Spotify, YouTube, SoundCloud и Яндекс Музыка.</p>
+<a class="btn" href="https://github.com/luviel19/Music_Island/releases/latest"><span data-l="en">⬇ Download for Windows</span><span data-l="ru">⬇ Скачать для Windows</span></a>
+<a class="btn o" href="https://github.com/luviel19/Music_Island">GitHub</a>
+</header>
+
+<div class="shots"><img src="screenshot.png" width="560" alt="Music Island expanded"><br><img src="screenshot-compact.png" width="380" alt="Music Island compact"></div>
+
+<h2 data-l="en">Features</h2><h2 data-l="ru">Возможности</h2>
+<div class="grid">
+<div class="card"><b>Spotify</b><span data-l="en">Official web player inside the island (WebView2). Free or Premium, no developer keys.</span><span data-l="ru">Официальный веб-плеер внутри острова (WebView2). Free или Premium, ключи разработчика не нужны.</span></div>
+<div class="card"><b data-l="en">All sources</b><b data-l="ru">Все площадки</b><span data-l="en">Yandex Music, SoundCloud, YouTube, Spotify and any Windows media player, with one search across them.</span><span data-l="ru">Яндекс Музыка, SoundCloud, YouTube, Spotify и любой плеер Windows, один поиск по всем.</span></div>
+<div class="card"><b data-l="en">Waveform and equalizer</b><b data-l="ru">Волна и эквалайзер</b><span data-l="en">Clickable waveform progress, 10-band equalizer, colours taken from the cover.</span><span data-l="ru">Волна-прогресс с перемоткой, эквалайзер на 10 полос, цвета из обложки.</span></div>
+<div class="card"><b data-l="en">Always on screen</b><b data-l="ru">Всегда на экране</b><span data-l="en">Cannot be dragged off screen, snaps into a corner, survives Win+D.</span><span data-l="ru">Не уходит за экран, встаёт в угол, не пропадает по Win+D.</span></div>
+</div>
+
+<h2 data-l="en">Install</h2><h2 data-l="ru">Установка</h2>
+<p data-l="en">Download <code>Music-Island-Setup-*.exe</code> from <a href="https://github.com/luviel19/Music_Island/releases/latest">Releases</a> and run it. The installer is unsigned, so SmartScreen may warn: choose "More info, then Run anyway".</p>
+<p data-l="ru">Скачайте <code>Music-Island-Setup-*.exe</code> из <a href="https://github.com/luviel19/Music_Island/releases/latest">Releases</a> и запустите. Установщик не подписан, SmartScreen может предупредить: «Подробнее → Выполнить в любом случае».</p>
+
+<h2 data-l="en">Spotify limitations</h2><h2 data-l="ru">Ограничения Spotify</h2>
+<p data-l="en">Spotify runs through the official web player, which does not expose like or shuffle state, so the island does not fake them. The queue and "My music" are read from the page and may break if Spotify changes its layout. Ads in the Free tier play as in a normal browser; the island does not block them.</p>
+<p data-l="ru">Spotify работает через официальный веб-плеер, который не отдаёт состояние лайка и перемешивания, поэтому остров их не имитирует. Очередь и «Моя музыка» читаются со страницы и могут перестать работать, если Spotify изменит вёрстку. Реклама в Free играет как в браузере, остров её не блокирует.</p>
+
+<p class="dim">MIT · <span data-l="en">Not affiliated with Spotify, YouTube, SoundCloud or Yandex.</span><span data-l="ru">Проект независимый и не связан со Spotify, YouTube, SoundCloud и Яндексом.</span></p>
+</main>
+<script>
+function L(l){document.documentElement.dataset.lang=l;document.documentElement.lang=l;try{localStorage.lang=l}catch(e){}}
+var s;try{s=localStorage.lang}catch(e){}
+L(s||((navigator.language||'').indexOf('ru')===0?'ru':'en'));
+</script>
+</body>
+</html>

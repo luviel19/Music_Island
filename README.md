@@ -9,7 +9,9 @@
 ![Version](https://img.shields.io/badge/version-0.2.10-ffb347?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-ff4d94?style=for-the-badge)
 
-**[⬇ Скачать](../../releases/latest)** &nbsp;·&nbsp; **[✨ Возможности](#-возможности)** &nbsp;·&nbsp; **[🎵 Площадки](#-площадки)** &nbsp;·&nbsp; **[🛠 Сборка](#-сборка-из-исходников)** &nbsp;·&nbsp; **[❓ Вопросы](#-вопросы-и-ответы)**
+**Music Island — an open-source Dynamic Island music player for Windows 10/11 with Spotify, YouTube, SoundCloud and Yandex Music.**
+
+**[⬇ Download / Скачать](../../releases/latest)** &nbsp;·&nbsp; **[🌐 Website](https://luviel19.github.io/Music_Island/)** &nbsp;·&nbsp; **[✨ Возможности](#-возможности)** &nbsp;·&nbsp; **[🎵 Площадки](#-площадки)** &nbsp;·&nbsp; **[🛠 Сборка](#-сборка-из-исходников)** &nbsp;·&nbsp; **[❓ Вопросы](#-вопросы-и-ответы)**
 
 <br>
 
@@ -20,6 +22,25 @@
 <img src="assets/screenshot-compact.png" width="420" alt="Music Island: компактный режим" />
 
 </div>
+
+<details>
+<summary><b>🇬🇧 English</b></summary>
+
+<br>
+
+Music Island is a small always-on-top «island» for your Windows desktop. It shows the current track, a waveform progress bar and playback controls, expands on hover and adapts its colours to the cover art.
+
+- **Sources:** Spotify (the official web player inside the island via Microsoft Edge WebView2, Free or Premium), YouTube, SoundCloud, Yandex Music and any system media player.
+- **One search** across all sources, a 10-band equalizer (Yandex Music and SoundCloud), queue, likes, media keys, tray menu, autostart.
+- **Spotify without developer keys:** you log in on the real open.spotify.com page; the island controls playback through Windows media controls and reads the queue from the page. No Spotify Web API, no Client ID, no cookie extraction, no ad blocking.
+- **Stays on screen:** the island cannot be dragged off screen, collapsed it snaps into the very corner, and it survives Win+D.
+
+**Download:** [latest release](../../releases/latest) · Windows 10/11 x64 · MIT license.
+**Build:** `npm install && npm run build:spotify && npm start`
+
+> Not affiliated with Spotify, YouTube, SoundCloud or Yandex. Spotify has no like, shuffle or equalizer in the island because the embedded web player does not expose them.
+
+</details>
 
 <br>
 
