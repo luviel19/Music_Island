@@ -15,6 +15,10 @@
 
 <br>
 
+<img src="assets/promo.gif" width="640" alt="Music Island: промо-ролик" />
+
+<br><br>
+
 <img src="assets/screenshot.png" width="640" alt="Music Island: раскрытый остров" />
 
 <br><br>

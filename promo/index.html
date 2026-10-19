@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Music Island promo</title>
+<style>
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1280px; height: 720px; overflow: hidden; background: #0b0b14; font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif; color: #fff; }
+#bg { position: absolute; inset: 0; background:
+  radial-gradient(60% 70% at 15% 10%, rgba(255,77,148,.38), transparent 60%),
+  radial-gradient(55% 65% at 90% 95%, rgba(123,97,255,.42), transparent 60%), linear-gradient(135deg, #0b0b14, #14102a 55%, #240e36); }
+.abs { position: absolute; }
+.grad { background: linear-gradient(90deg, #ffb347, #ff4d94, #7b61ff); -webkit-background-clip: text; color: transparent; }
+.center { left: 0; right: 0; text-align: center; }
+#island { left: 50%; top: 0; transform: translateX(-50%); background: #000; overflow: hidden; border-radius: 40px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.08); }
+#island .glow { position: absolute; inset: 0; background: radial-gradient(120% 90% at 0 0, rgba(255,110,150,.35), transparent 60%); }
+.cover { border-radius: 50%; background: linear-gradient(135deg, #ffb347, #ff4d94 55%, #7b61ff); display: grid; place-items: center; }
+.cover svg { width: 55%; height: 55%; fill: #fff; }
+.chip { padding: 14px 26px; border-radius: 40px; font-weight: 700; font-size: 26px; color: #fff; display: flex; align-items: center; gap: 12px; }
+.dot { width: 14px; height: 14px; border-radius: 50%; }
+.sub { font-size: 30px; color: rgba(255,255,255,.72); }
+.en { font-size: 22px; color: rgba(255,255,255,.45); margin-top: 8px; }
+.btn { display: inline-block; padding: 20px 46px; border-radius: 50px; font-size: 32px; font-weight: 800; background: linear-gradient(90deg, #ffb347, #ff4d94, #7b61ff); }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+
+<div class="abs center" id="title" style="top:250px">
+  <div class="grad" style="font-size:120px;font-weight:800;letter-spacing:2px">Music Island</div>
+  <div class="sub" style="margin-top:14px">Dynamic Island для вашей музыки в Windows</div>
+  <div class="en">Dynamic Island for your music on Windows</div>
+</div>
+
+<div class="abs" id="island">
+  <div class="glow"></div>
+  <div class="abs cover" id="cv"><svg viewBox="0 0 24 24"><path d="M9 3v11.3A3.5 3.5 0 1 0 11 17.5V8l8-2v6.3A3.5 3.5 0 1 0 21 15.5V3z"/></svg></div>
+  <div class="abs" id="tt" style="font-weight:700;font-size:26px;white-space:nowrap">Night Drive</div>
+  <div class="abs" id="ar" style="color:rgba(255,255,255,.6);font-size:20px;white-space:nowrap">Aurora Lane</div>
+  <div class="abs" id="wave"></div>
+  <div class="abs" id="ctl"></div>
+</div>
+
+<div class="abs center" id="cap" style="top:430px"></div>
+<div class="abs" id="chips" style="left:0;right:0;top:420px;display:flex;justify-content:center;gap:18px"></div>
+
+<div class="abs center" id="cta" style="top:230px">
+  <div class="grad" style="font-size:86px;font-weight:800">Скачать бесплатно</div>
+  <div class="en" style="font-size:28px;margin-bottom:34px">Free and open source · MIT · Windows 10 / 11</div>
+  <div class="btn">github.com/luviel19/Music_Island</div>
+  <div class="sub" style="margin-top:28px;font-size:26px">v0.2.10</div>
+</div>
+
+<script>
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const spring = (x) => { x = clamp(x); return 1 + 2.2 * Math.pow(x - 1, 3) + 1.2 * Math.pow(x - 1, 2); };
+const lerp = (a, b, k) => a + (b - a) * k;
+const $ = (id) => document.getElementById(id);
+const island = $('island'), cv = $('cv'), tt = $('tt'), ar = $('ar'), wave = $('wave'), ctl = $('ctl');
+
+const N = 58, bars = [];
+for (let i = 0; i < N; i++) { const b = document.createElement('i'); b.style.cssText = 'position:absolute;bottom:0;width:5px;border-radius:3px;background:linear-gradient(#ffb347,#ff4d94)'; wave.appendChild(b); bars.push(b); }
+ctl.innerHTML = '<svg viewBox="0 0 24 24" width="46" height="46" style="position:absolute;left:0;top:0"><path d="M6 6v12M8 12l9-6v12z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>' +
+  '<div style="position:absolute;left:68px;top:-4px;width:56px;height:56px;border-radius:50%;background:#fff"><svg viewBox="0 0 24 24" style="width:30px;margin:13px 0 0 15px"><path d="M8 5v14l11-7z" fill="#000"/></svg></div>' +
+  '<svg viewBox="0 0 24 24" width="46" height="46" style="position:absolute;left:148px;top:0"><path d="M18 6v12M16 12 7 6v12z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+
+const SRC = [['Spotify', '#1ed760', '#000'], ['YouTube', '#ff2d2d', '#fff'], ['SoundCloud', '#ff5500', '#fff'], ['Яндекс Музыка', '#ffdb4d', '#000'], ['Системный плеер', '#7b61ff', '#fff']];
+$('chips').innerHTML = SRC.map(([n, c, f]) => `<div class="chip" style="background:${c};color:${f}"><span class="dot" style="background:${f};opacity:.85"></span>${n}</div>`).join('');
+
+function wavePos(t, prog) {
+  for (let i = 0; i < N; i++) {
+    const h = 14 + 30 * Math.abs(Math.sin(i * 0.41 + 1.3) * Math.cos(i * 0.17)) + 8 * Math.sin(t * 6 + i * 0.6);
+    bars[i].style.left = (i * 8.6) + 'px';
+    bars[i].style.height = h + 'px';
+    bars[i].style.opacity = i / N < prog ? 1 : 0.28;
+  }
+}
+
+function setT(t) {
+  // сцена 1: заставка 0-3.2
+  const tIn = ease(t / 0.9), tOut = ease((t - 2.5) / 0.7);
+  $('title').style.opacity = tIn * (1 - tOut);
+  $('title').style.transform = `translateY(${(1 - tIn) * 40 - tOut * 60}px) scale(${lerp(.92, 1, tIn)})`;
+
+  // остров: появляется со 3.0, сворачивается/раскрывается
+  const appear = spring((t - 3.0) / 0.9);
+  const expand = ease((t - 6.0) / 0.9) * (1 - ease((t - 14.0) / 0.8)) ;
+  const W = lerp(300, 720, expand), H = lerp(56, 250, expand);
+  island.style.width = W + 'px'; island.style.height = H + 'px';
+  island.style.borderRadius = lerp(28, 48, expand) + 'px';
+  const off = t < 14.4 ? lerp(-90, 150, ease((t - 3.0) / 1.0)) : lerp(150, 120, ease((t - 14.4) / .8));
+  island.style.top = (t < 3 ? -100 : lerp(-60, 1, 0) + (1 - Math.min(1, appear)) * -90 + (t > 14.4 ? 0 : 0) + (t < 6 ? 150 : lerp(150, 120, expand * 0 + 0))) + 'px';
+  island.style.opacity = t < 3 ? 0 : t > 17.2 ? 1 - ease((t - 17.2) / 0.6) : 1;
+  const fly = t < 6 ? 0 : ease((t - 6) / 0.9);
+  const top = 120 + (t < 3 ? -200 : (1 - Math.min(1, appear)) * -160);
+  island.style.top = top + 'px';
+
+  // содержимое
+  const ci = 14 + 22 * (1 - expand);
+  cv.style.cssText = `left:${lerp(12, 28, expand)}px;top:${lerp(9, 28, expand)}px;width:${lerp(38, 92, expand)}px;height:${lerp(38, 92, expand)}px`;
+  tt.style.cssText = `left:${lerp(64, 140, expand)}px;top:${lerp(7, 36, expand)}px;font-size:${lerp(18, 30, expand)}px;font-weight:700;white-space:nowrap`;
+  ar.style.cssText = `left:${lerp(64, 140, expand)}px;top:${lerp(30, 76, expand)}px;font-size:${lerp(14, 21, expand)}px;color:rgba(255,255,255,.6);white-space:nowrap`;
+  const wv = clamp(expand * 1.4 - 0.3);
+  wave.style.cssText = `left:28px;top:${lerp(30, 126, expand)}px;width:${N * 8.6}px;height:56px;opacity:${expand > 0.05 ? 1 : 0}`;
+  wave.style.transform = `scale(${lerp(0.25, 1, expand)}, 1)`; wave.style.transformOrigin = '0 0';
+  if (expand < 0.05) { wave.style.left = '170px'; wave.style.top = '26px'; wave.style.opacity = 1; wave.style.transform = 'scale(.13,.6)'; }
+  wavePos(t, clamp((t - 6.5) / 8));
+  ctl.style.cssText = `left:${lerp(260, 260, 0)}px;top:196px;width:200px;height:56px;opacity:${clamp(expand * 2 - 1)}`;
+  ctl.style.left = ((W - 200) / 2) + 'px';
+
+  // подписи сцен
+  const caps = [
+    [3.6, 6.0, 'Живой остров поверх рабочего стола', 'A live island above your desktop'],
+    [7.2, 10.2, 'Наведите: обложка, волна, управление', 'Hover to expand: cover, waveform, controls'],
+    [10.4, 14.0, 'Одна очередь для всех сервисов', 'One player for every service'],
+  ];
+  let cap = '';
+  for (const [a, b, ru, en] of caps) if (t >= a && t < b) {
+    const k = ease((t - a) / 0.5) * (1 - ease((t - b + 0.4) / 0.4));
+    cap = `<div style="opacity:${k};transform:translateY(${(1 - k) * 18}px)"><div class="sub" style="font-size:38px;color:#fff">${ru}</div><div class="en">${en}</div></div>`;
+  }
+  $('cap').innerHTML = (t >= 3.6 && t < 14) && !(t >= 10.4) ? cap : (t >= 10.4 && t < 14 ? cap : '');
+  $('cap').style.top = (t < 6 ? 330 : 430) + 'px';
+
+  // чипы площадок 10.8-14
+  const ch = $('chips').children;
+  for (let i = 0; i < ch.length; i++) {
+    const k = spring((t - 10.9 - i * 0.18) / 0.6) * (1 - ease((t - 13.6) / 0.5));
+    ch[i].style.opacity = clamp(k);
+    ch[i].style.transform = `translateY(${(1 - clamp(k)) * 30}px) scale(${lerp(.8, 1, clamp(k))})`;
+  }
+  $('chips').style.top = '560px';
+  $('chips').style.flexWrap = 'wrap'; $('chips').style.padding = '0 80px';
+
+  // сцена Spotify 14-17.4
+  const sp = clamp(ease((t - 14.2) / 0.6)) * (1 - ease((t - 17.0) / 0.5));
+  let spDiv = $('spdiv');
+  if (!spDiv) {
+    spDiv = document.createElement('div'); spDiv.id = 'spdiv'; spDiv.className = 'abs center'; spDiv.style.top = '250px';
+    spDiv.innerHTML = '<div style="display:inline-flex;align-items:center;gap:22px"><svg viewBox="0 0 24 24" width="110" height="110"><circle cx="12" cy="12" r="11" fill="#1ed760"/><path d="M6.5 9.3c3.6-1.1 7.6-.8 11 1M7.2 12.6c3-.9 6.2-.6 9 .9M8 15.7c2.4-.7 4.8-.4 6.9.7" fill="none" stroke="#000" stroke-width="1.7" stroke-linecap="round"/></svg><span style="font-size:96px;font-weight:800">Spotify</span></div><div class="sub" style="margin-top:20px;font-size:38px;color:#fff">Через официальный веб-плеер. Free и Premium.</div><div class="en">Official web player inside the island. No developer keys.</div>';
+    document.body.appendChild(spDiv);
+  }
+  spDiv.style.opacity = sp; spDiv.style.transform = `translateY(${(1 - sp) * 40}px)`;
+
+  // финал 17.4-20
+  const fin = ease((t - 17.6) / 0.7);
+  $('cta').style.opacity = fin; $('cta').style.transform = `translateY(${(1 - fin) * 40}px) scale(${lerp(.95, 1, fin)})`;
+}
+window.setT = setT; setT(0);
+</script>
+</body>
+</html>
