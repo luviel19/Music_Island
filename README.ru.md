@@ -171,7 +171,7 @@ Spotify подключается **через официальный веб-пл
 - Установщик **не подписан цифровой подписью**, SmartScreen может предупредить о неизвестном издателе. Скачивайте только из [официальных релизов](https://github.com/luviel19/Music_Island/releases) и сверяйте SHA-256 из описания релиза:
 
   ```powershell
-  Get-FileHash .\Music-Island-Setup-0.2.10.exe -Algorithm SHA256
+  Get-FileHash .\Music-Island-Setup-0.2.11.exe -Algorithm SHA256
   ```
 
 - Токены входа (Яндекс Музыка, SoundCloud, ссылка VPN) хранятся зашифрованными средствами Windows (Electron `safeStorage`). Сессия Spotify лежит в профиле WebView2 в `%APPDATA%\Music Island\spotify-profile`.
