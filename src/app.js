@@ -543,7 +543,7 @@ $('#like').onclick = async () => {
   const on = !T.liked;
   T.liked = on; renderLike();
   const btn = $('#like'); btn.classList.remove('pop'); void btn.offsetWidth; if (on) btn.classList.add('pop');
-  try { await P.like(on); } catch { T.liked = !on; renderLike(); }
+  try { await P.like(on); } catch (e) { T.liked = !on; renderLike(); if (e.message !== 'auth') flash(e.message); }
 };
 $('#pin').onclick = () => host.setSetting({ alwaysOnTop: !S.settings.alwaysOnTop });
 $('#toQueue').onclick = () => setSub('queue');

@@ -24,19 +24,81 @@ module.exports = function createSoundCloud(ctx) {
     throw new Error(urls.length ? 'Не удалось получить ключ SoundCloud' : `SoundCloud ответил странно (HTTP ${hr.status}): прокси его блокирует или подменяет страницу`);
   }
 
+  // SoundCloud защищает изменяющие запросы (лайк) проверкой DataDome. Поэтому такие запросы выполняются
+  // внутри настоящей страницы soundcloud.com (скрытое окно с сессией входа): её скрипт держит куки в порядке.
+  // Если нужна капча, окно показывается с капчей внутри страницы; после решения запрос повторяется.
+  let sw = null;
+  const scWin = () => {
+    if (sw && !sw.win.isDestroyed()) return sw;
+    const win = new ctx.BrowserWindow({ width: 520, height: 720, show: false, title: 'Проверка SoundCloud', autoHideMenuBar: true, alwaysOnTop: true, webPreferences: { partition: 'persist:soundcloud' } });
+    const ready = new Promise((resolve) => { win.webContents.once('did-finish-load', () => setTimeout(resolve, 1500)); win.webContents.once('did-fail-load', () => resolve()); });
+    win.webContents.setAudioMuted(true); // страница сайта не должна ничего проигрывать
+    win.on('closed', () => { sw = null; }); // закрытие окна = отмена проверки
+    win.loadURL('https://soundcloud.com/');
+    sw = { win, ready };
+    return sw;
+  };
+  const dd = async () => (await ctx.session.fromPartition('persist:soundcloud').cookies.get({ name: 'datadome' }))[0]?.value || '';
+
+  async function pageFetch(url, token, method) {
+    const { win, ready } = scWin();
+    await ready;
+    const js = `fetch(${JSON.stringify(url)}, { method: ${JSON.stringify(method)}, headers: { Authorization: ${JSON.stringify('OAuth ' + token)}, Accept: 'application/json' }, credentials: 'include' })
+      .then(async (r) => ({ status: r.status, text: await r.text().catch(() => '') }))`;
+    return win.webContents.executeJavaScript(js);
+  }
+
+  let captcha = null;
+  function solveCaptcha(link) {
+    if (captcha) return captcha;
+    captcha = new Promise((resolve) => {
+      let host = ''; try { host = new URL(link).hostname; } catch { /* нет ссылки */ }
+      if (!/(^|\.)captcha-delivery\.com$/.test(host)) { resolve(false); return; }
+      const { win } = scWin();
+      let done = false;
+      const finish = (ok) => { if (done) return; done = true; clearInterval(iv); clearTimeout(to); win.removeListener('closed', onHide); if (!win.isDestroyed()) win.hide(); resolve(ok); };
+      const onHide = () => finish(false);
+      dd().then((first) => {
+        if (done) return;
+        iv = setInterval(async () => { const v = await dd(); if (v && v !== first) setTimeout(() => finish(true), 1500); }, 1000);
+      });
+      let iv; const to = setTimeout(() => finish(false), 180000);
+      const js = `(() => { document.getElementById('mi-cap')?.remove(); const f = document.createElement('iframe'); f.id = 'mi-cap'; f.src = ${JSON.stringify(link)}; f.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147483647;background:#fff'; document.body.appendChild(f); })()`;
+      win.webContents.executeJavaScript(js).then(() => { win.show(); win.once('closed', onHide); }).catch(() => finish(false));
+    }).finally(() => { captcha = null; });
+    return captcha;
+  }
+
   async function api(pathOrUrl, { query, auth, method = 'GET' } = {}) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    let askedCaptcha = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
       const url = new URL(pathOrUrl.startsWith('http') ? pathOrUrl : API + pathOrUrl);
       for (const [k, v] of Object.entries(query || {})) url.searchParams.set(k, v);
-      url.searchParams.set('client_id', await getCid(attempt > 0));
+      url.searchParams.set('client_id', await getCid(attempt > 0 && !askedCaptcha));
       const headers = { 'User-Agent': UA, Accept: 'application/json' };
       const token = auth ? getToken() : null;
       if (token) headers.Authorization = `OAuth ${token}`;
-      const r = await ctx.fetch(url, { headers, method });
-      if ((r.status === 401 || r.status === 403) && attempt === 0) continue; // возможно протух client_id
-      if (r.status === 401 || r.status === 403) throw new Error(token ? 'auth' : `HTTP ${r.status}`);
-      if (!r.ok) { console.error('[sc]', method, url.pathname, r.status); throw new Error(`HTTP ${r.status}`); }
-      return r.status === 204 ? null : r.json().catch(() => null);
+      const web = !!token && method !== 'GET'; // изменяющий запрос от имени пользователя — из страницы soundcloud.com
+      let status, text, r;
+      if (web) { ({ status, text } = await pageFetch(url.href, token, method)); } else { r = await ctx.fetch(url, { headers, method }); status = r.status; }
+      if (status === 401 || status === 403) {
+        const body = web ? text : await r.text().catch(() => '');
+        const link = web && status === 403 && /captcha-delivery\.com/.test(body) ? (() => { try { return JSON.parse(body).url; } catch { return ''; } })() : '';
+        if (link && !askedCaptcha) {
+          askedCaptcha = true;
+          if (await solveCaptcha(link)) continue;
+          throw new Error('Нужно пройти проверку SoundCloud, чтобы поставить лайк');
+        }
+        if (link) throw new Error('SoundCloud просит пройти проверку, попробуйте ещё раз');
+        console.error('[sc]', method, url.pathname, status);
+        if (attempt === 0) continue; // возможно протух client_id
+        throw new Error(token && (!web || status === 401) ? 'auth' : `HTTP ${status}`);
+      }
+      const ok = status >= 200 && status < 300;
+      if (!ok) { console.error('[sc]', method, url.pathname, status); throw new Error(`HTTP ${status}`); }
+      if (status === 204) return null;
+      if (web) { try { return JSON.parse(text); } catch { return null; } }
+      return r.json().catch(() => null);
     }
   }
 

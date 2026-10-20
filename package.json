@@ -1,6 +1,6 @@
 {
   "name": "music-island",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "description": "Free open-source Dynamic Island music player for Windows: Spotify, Yandex Music, YouTube, SoundCloud and system player",
   "homepage": "https://luviel19.github.io/Music_Island/",
   "repository": { "type": "git", "url": "git+https://github.com/luviel19/Music_Island.git" },
