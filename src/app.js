@@ -120,7 +120,7 @@ document.addEventListener('mouseleave', () => setOver(false));
 // ───────────────────── перетаскивание острова ─────────────────────
 let pd = null, justDragged = false;
 island.addEventListener('pointerdown', (e) => {
-  if (e.button !== 0 || S.settings.lockPosition || e.target.closest('button, .bar, .qitem, .list, .sbox, .srow, .eq-bands, .eq-presets')) return;
+  if (e.button !== 0 || S.settings.lockPosition || e.target.closest('button, .bar, .qitem, .list, .sbox, .srow, .eq-bands, .eq-presets, .lw, .lyr-body')) return;
   pd = { x: e.screenX, y: e.screenY, moved: false };
   island.setPointerCapture(e.pointerId);
 });
