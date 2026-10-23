@@ -172,7 +172,7 @@ No. It is an independent project and all trademarks belong to their owners.
 - The installer is **not code-signed**. SmartScreen may warn about unknown publishers. Download only from the [official releases](https://github.com/luviel19/Music_Island/releases) and compare the SHA-256 hash printed in the release notes:
 
   ```powershell
-  Get-FileHash .\Music-Island-Setup-0.2.13.exe -Algorithm SHA256
+  Get-FileHash .\Music-Island-Setup-0.2.14.exe -Algorithm SHA256
   ```
 
 - Sign-in tokens (Yandex Music, SoundCloud, VPN link) are stored encrypted with Windows (Electron `safeStorage`). The Spotify session lives in the WebView2 profile in `%APPDATA%\Music Island\spotify-profile`.

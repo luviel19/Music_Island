@@ -92,19 +92,21 @@ const Lyrics = (() => {
   }
   btn.onclick = toggle;
 
-  // колесо мыши листает слова: центральная строка меняется, клик по ней перематывает песню на эту строку
-  $('.l-karaoke').addEventListener('wheel', (e) => {
-    if (!data?.synced) return; // у обычного текста листает сам список
+  // колесо мыши листает слова (и над раскрытым при наведении островом тоже): у текста с метками времени центральная
+  // строка меняется, клик по ней перематывает песню; обычный текст просто прокручивается
+  island.addEventListener('wheel', (e) => {
+    if (!visible() || !data) return;
     e.preventDefault();
+    if (!data.synced) { body.scrollTop += e.deltaY; return; }
     wheelAcc += e.deltaY;
-    const steps = Math.trunc(wheelAcc / 40);
+    const steps = Math.trunc(wheelAcc / 90);
     if (!steps) return;
-    wheelAcc -= steps * 40;
+    wheelAcc -= steps * 90;
     const to = Math.max(0, Math.min(data.lines.length - 1, center() + steps));
     off = to - cur;
     render();
     clearTimeout(browseT);
-    browseT = setTimeout(() => { off = 0; render(); }, 4000); // через 4 секунды без прокрутки возвращаемся к песне
+    browseT = setTimeout(() => { off = 0; render(); }, 8000); // через 8 секунд без прокрутки возвращаемся к песне
   }, { passive: false });
 
   // При наведении на «чёлку» сверху остров раскрывается поверх слов, при уходе курсора сворачивается обратно

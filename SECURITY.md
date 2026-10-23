@@ -15,11 +15,11 @@ The installer is **not code-signed**, so Windows SmartScreen may warn about an u
 2. Compare the SHA-256 of the file with the value in the release notes:
 
    ```powershell
-   Get-FileHash .\Music-Island-Setup-0.2.13.exe -Algorithm SHA256
+   Get-FileHash .\Music-Island-Setup-0.2.14.exe -Algorithm SHA256
    ```
 
-   SHA-256 of `Music-Island-Setup-0.2.13.exe`:
-   `da3a89117216d05e753631177f9568b5f85b5aa56591ff52e523350f314d2acb`
+   SHA-256 of `Music-Island-Setup-0.2.14.exe`:
+   `638cac6aabdb9f4d53d3ba9f8a01025e73ad1366bc967b2d39a788caf0f1ef86`
 3. Then choose **More info → Run anyway**. Do not disable Windows Defender or SmartScreen.
 4. You can also build the app yourself from the source (see README).
 
