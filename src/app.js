@@ -109,7 +109,7 @@ function setOver(o, force) {
     if (S.settings.hoverExpand && !S.open) openT = setTimeout(() => setOpen(true), 90);
   } else {
     clearTimeout(openT);
-    closeT = setTimeout(() => { if (!S.over && !S.busy && !S.dragging) setOpen(false); }, 650);
+    closeT = setTimeout(() => { if (!S.over && !S.busy && !S.dragging && S.sub !== 'karaoke') setOpen(false); }, 650);
   }
 }
 const evalOver = (x, y) => setOver(!!document.elementFromPoint(x, y)?.closest('#island, #menu'), true);
@@ -145,8 +145,9 @@ island.addEventListener('click', () => { if (!justDragged && !S.open) setOpen(tr
 // ───────────────────── подсказки ─────────────────────
 const tip = $('#tip'), stage = $('#stage');
 // у края экрана раскрытый остров смещается внутрь на экран плавно, вместе со своей анимацией
-bridge.on('shift', (dx, dy, instant) => {
+bridge.on('shift', (dx, dy, instant, mask = 0) => {
   stage.classList.toggle('nofx', instant);
+  ['t', 'r', 'b', 'l'].forEach((c, i) => island.classList.toggle('e-' + c, !!(mask & (1 << i)))); // касается края экрана — без скругления
   stage.style.setProperty('--sx', dx + 'px'); stage.style.setProperty('--sy', dy + 'px');
 });
 document.addEventListener('mouseover', (e) => {
@@ -382,8 +383,9 @@ function drawEq(now) {
 
 // ───────────────────── фон: светодиодная решётка ─────────────────────
 const bgCv = $('#bgeq'), bgG = bgCv.getContext('2d');
-const BG_W = 14, BG_H = 6.6, BG_GAP = 2;
-const BG_COLS = Math.floor(460 / (BG_W + BG_GAP)), BG_ROWS = Math.floor(198 / (BG_H + BG_GAP));
+const BG_H = 6.6, BG_GAP = 2;
+const BG_COLS = Math.floor(460 / 16), BG_ROWS = Math.floor(198 / (BG_H + BG_GAP));
+const BG_W = (460 + BG_GAP) / BG_COLS - BG_GAP; // колонки растянуты на всю ширину острова, без пустых полей по краям
 const bgLv = Array(BG_COLS).fill(0), bgPeak = Array(BG_COLS).fill(0);
 const bgPh = Array.from({ length: BG_COLS }, (_, i) => (i * 2.399) % 6.283);
 const bgSp = Array.from({ length: BG_COLS }, (_, i) => 2.2 + ((i * 7) % 11) * 0.55);
@@ -431,17 +433,18 @@ function drawBg(now) {
 
 // на паузе перерисовываем только то, что изменилось (иначе процессор зря крутит анимацию)
 let lastSig = '';
-const settling = (st) => (st === 'compact' ? eqV.some((v) => v > 0.02) : bgLv.some((v, i) => v > 0.02 || bgPeak[i] > 0.02));
+const settling = (st) => (st === 'compact' || (st === 'karaoke' && !island.classList.contains('peek')) ? eqV.some((v) => v > 0.02) : bgLv.some((v, i) => v > 0.02 || bgPeak[i] > 0.02));
 setInterval(() => {
   const st = island.dataset.state, now = performance.now();
-  if (st !== 'compact' && st !== 'expanded') return;
+  if (st !== 'compact' && st !== 'expanded' && st !== 'karaoke') return;
   if (!T.playing && !settling(st)) {
-    const sig = `${st}|${T.track?.id}|${Math.round(T.pos)}|${hoverX}|${ACC}|${T.wave?.length}|${T.wave?.[7]}`;
+    const sig = `${st}|${island.classList.contains('peek')}|${T.track?.id}|${Math.round(T.pos)}|${hoverX}|${ACC}|${T.wave?.length}|${T.wave?.[7]}`;
     if (sig === lastSig) return;
     lastSig = sig;
   } else lastSig = '';
-  if (st === 'compact') drawEq(now);
-  else if (st === 'expanded') { drawBg(now); drawWave(now); }
+  const peek = st === 'karaoke' && island.classList.contains('peek'); // в караоке остров раскрывается поверх слов
+  if (st === 'compact' || (st === 'karaoke' && !peek)) drawEq(now);
+  if (st === 'expanded' || peek) { drawBg(now); drawWave(now); }
 }, 33);
 
 let modesFor = null;

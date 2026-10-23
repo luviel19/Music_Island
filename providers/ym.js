@@ -224,6 +224,24 @@ module.exports = function createYandex(ctx) {
       const r = await api('/search', { query: { text: q, type: 'track', page: 0, nocorrect: 'false' } });
       return (r.tracks?.results || []).map(norm).filter((t) => t.available).slice(0, 20);
     },
+    searchAlbums: async (q) => {
+      q = String(q).slice(0, 100);
+      const r = await api('/search', { query: { text: q, type: 'album', page: 0, nocorrect: 'false' } });
+      return (r.albums?.results || []).filter((a) => a.available !== false).slice(0, 20).map((a) => ({
+        id: String(a.id),
+        title: a.title + (a.version ? ` (${a.version})` : ''),
+        artists: (a.artists || []).map((x) => x.name).join(', '),
+        year: a.year || '',
+        trackCount: a.trackCount || 0,
+        cover: a.coverUri ? 'https://' + a.coverUri.replace('%%', '400x400') : null,
+      }));
+    },
+    album: async (id) => {
+      id = String(id);
+      if (!/^\d{1,12}$/.test(id)) throw new Error('bad id');
+      const r = await api(`/albums/${id}/with-tracks`);
+      return (r.volumes || []).flat().map((t) => norm(t.albums?.length ? t : { ...t, albums: [r] })).filter((t) => t.available);
+    },
     similar: async (id) => {
       const r = await api(`/tracks/${encodeURIComponent(id)}/similar`);
       return (r.similarTracks || []).map(norm).filter((t) => t.available);

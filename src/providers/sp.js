@@ -113,6 +113,7 @@ Providers.register((() => {
 
     setMode: (mode) => host.call('sp:nav', { to: mode }),
     async searchWeb(q) { if (await host.call('sp:search', { q })) host.flash('Результаты поиска Spotify открыты в панели'); },
+    async searchWebAlbums(q) { if (await host.call('sp:search', { q, kind: 'albums' })) host.flash('Альбомы Spotify открыты в панели'); },
     toggle() {
       const was = host.isPlaying();
       host.setPlaying(!was); hold = Date.now() + 1200;

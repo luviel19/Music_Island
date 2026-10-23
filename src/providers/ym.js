@@ -203,6 +203,8 @@ Providers.register((() => {
       playIndex(0, true);
     },
     search: (h, q) => h.raw('ym:search', q),
+    searchAlbums: (h, q) => h.raw('ym:searchAlbums', q),
+    albumTracks: (h, album) => h.raw('ym:album', album.id),
     stop() {
       active = false; Q.loadSeq++; Q.playSeq++;
       audio.pause(); audio.removeAttribute('src');

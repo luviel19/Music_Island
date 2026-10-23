@@ -52,6 +52,7 @@ Music Island is a small always-on-top «island» in the spirit of Apple's Dynami
 | 🎚 **10-band equalizer** | Yandex Music and SoundCloud: manual bands, presets, colour grid in the island background |
 | 🧭 **My Wave tuning** | Yandex Music: pick by mood, activity and character of the songs |
 | 📜 **Queue and track card** | Browse upcoming tracks, open details, like songs (where the service supports it) |
+| 🎤 **Karaoke lyrics** | A panel under the island with the song lyrics, the current line is highlighted in time with the track (lyrics come from the open LRCLIB database) |
 | ⌨️ **Media keys and tray** | Global media keys, tray menu, autostart with Windows |
 | 🔔 **Update notice** | Checks GitHub Releases and shows a notice with a download button (it does not install anything by itself) |
 
@@ -171,7 +172,7 @@ No. It is an independent project and all trademarks belong to their owners.
 - The installer is **not code-signed**. SmartScreen may warn about unknown publishers. Download only from the [official releases](https://github.com/luviel19/Music_Island/releases) and compare the SHA-256 hash printed in the release notes:
 
   ```powershell
-  Get-FileHash .\Music-Island-Setup-0.2.12.exe -Algorithm SHA256
+  Get-FileHash .\Music-Island-Setup-0.2.13.exe -Algorithm SHA256
   ```
 
 - Sign-in tokens (Yandex Music, SoundCloud, VPN link) are stored encrypted with Windows (Electron `safeStorage`). The Spotify session lives in the WebView2 profile in `%APPDATA%\Music Island\spotify-profile`.

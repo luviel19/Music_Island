@@ -75,7 +75,7 @@ function sanitizeStored(raw, sources) {
 
 // Каналы, которые интерфейс острова может вызывать (дублируются в preload.js: там нельзя подключать файлы)
 const PROVIDER_IDS = ['ym', 'sc', 'yt', 'sp', 'zv', 'media'];
-const INVOKE = new RegExp(`^(settings:(get|set)|update:(get|open)|open:external|(${PROVIDER_IDS.join('|')}):[A-Za-z]{1,32})$`);
+const INVOKE = new RegExp(`^(settings:(get|set)|update:(get|open)|open:external|lyrics:get|(${PROVIDER_IDS.join('|')}):[A-Za-z]{1,32})$`);
 const SEND = new Set(['win:ignore', 'win:focusable', 'win:box', 'win:drag-start', 'win:drag-move', 'win:drag-end']);
 const RECEIVE = new Set(['update', 'settings', 'cmd', 'shift']);
 

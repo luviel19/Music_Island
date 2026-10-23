@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
 const security = require('./security');
+const lyrics = require('./lyrics');
 
 const WIN_W = 560;
 const WIN_H = 520;
@@ -207,6 +208,27 @@ for (const p of providers) {
   for (const [name, fn] of Object.entries(p.handlers)) handle(`${p.id}:${name}`, fn);
 }
 
+// Караоке: текст песни из LRCLIB. Наружу уходят только название, исполнитель, альбом и длительность трека.
+const lyricsCache = new Map();
+handle('lyrics:get', async (track) => {
+  const t = { title: String(track?.title ?? '').slice(0, 200), artist: String(track?.artist ?? '').slice(0, 200), album: String(track?.album ?? '').slice(0, 200), durationMs: Number(track?.durationMs) || 0 };
+  const key = `${t.artist}|${t.title}|${Math.round(t.durationMs / 1000)}`;
+  if (lyricsCache.has(key)) return lyricsCache.get(key);
+  const fetchJson = async (url) => {
+    for (let attempt = 0; ; attempt++) {
+      const r = await net.fetch(url, { headers: { 'User-Agent': lyrics.UA }, signal: AbortSignal.timeout(10000) });
+      if (r.status === 404) return null;
+      if (r.ok) return r.json();
+      if (r.status >= 500 && attempt < 2) { await new Promise((ok) => setTimeout(ok, 1200 * (attempt + 1))); continue; } // сервис занят: повторяем
+      throw new Error(r.status >= 500 ? 'сервис текстов LRCLIB сейчас перегружен, попробуйте чуть позже' : `сервис текстов ответил ${r.status}`);
+    }
+  };
+  const res = await lyrics.find(t, fetchJson);
+  if (lyricsCache.size > 100) lyricsCache.clear();
+  lyricsCache.set(key, res);
+  return res;
+});
+
 handle('settings:get', () => publicSettings());
 handle('settings:set', (patch) => {
   patch = security.sanitizePatch(patch, providers.map((p) => p.id)); // неизвестные ключи и неверные значения отбрасываются
@@ -283,8 +305,11 @@ function place(instant) {
   const b = win.getBounds();
   if (b.x !== w.x || b.y !== w.y || b.width !== WIN_W || b.height !== WIN_H) win.setBounds({ x: w.x, y: w.y, width: WIN_W, height: WIN_H });
   const p = clampPill(vp.x, vp.y, box);
-  const key = `${p.x - w.x},${p.y - w.y},${instant}`;
-  if (key !== lastShift) { lastShift = key; win.webContents.send('shift', p.x - w.x, p.y - w.y, !!instant); }
+  // у края экрана остров «прилипает» к нему: касающиеся края углы не скругляются (1 — сверху, 2 — справа, 4 — снизу, 8 — слева)
+  const il = p.x + (WIN_W - box.w) / 2, it = p.y + 8;
+  const mask = (it <= a.y + 1 ? 1 : 0) | (il + box.w >= a.x + a.width - 1 ? 2 : 0) | (it + box.h >= a.y + a.height - 1 ? 4 : 0) | (il <= a.x + 1 ? 8 : 0);
+  const key = `${p.x - w.x},${p.y - w.y},${instant},${mask}`;
+  if (key !== lastShift) { lastShift = key; win.webContents.send('shift', p.x - w.x, p.y - w.y, !!instant, mask); }
 }
 // Сворачивание (Win+D, «свернуть все окна») и сброс видимости не должны убирать остров
 function keepAlive() {
@@ -294,9 +319,13 @@ function keepAlive() {
   if (!drag) place(false);
   if (S.alwaysOnTop) win.setAlwaysOnTop(true, 'screen-saver');
 }
-function defaultPosition() {
-  const wa = screen.getPrimaryDisplay().workArea;
+function defaultPosition(display) {
+  const wa = (display || screen.getPrimaryDisplay()).workArea;
   return { x: Math.round(wa.x + (wa.width - WIN_W) / 2), y: wa.y };
+}
+function centerOn(display) {
+  const p = defaultPosition(display);
+  vp = p; S.x = p.x; S.y = p.y; saveSettings(); place(false);
 }
 function savedPosition() {
   if (S.x == null || S.y == null) return defaultPosition();
@@ -324,7 +353,7 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
   win.once('ready-to-show', () => { win.showInactive(); place(false); applySettings(); });
   for (const ev of ['minimize', 'hide']) win.on(ev, () => { if (!quitting) setTimeout(keepAlive, 50); });
-  const onDisplays = () => { vp = savedPosition(); keepAlive(); };
+  const onDisplays = () => { vp = savedPosition(); keepAlive(); tray?.setContextMenu(buildMenu()); };
   for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, onDisplays);
   setInterval(keepAlive, 2000);
 }
@@ -366,7 +395,11 @@ function buildMenu() {
       } },
       { label: 'Забыть сохранённую ссылку', enabled: !!customTarget(), click: () => { S.proxyCustom = null; S.proxy = ''; S.proxyLast = null; setProxyMode(proxyMode() === 'builtin' ? 'builtin' : 'off'); } },
     ] },
-    { label: 'Вернуть в центр экрана', click: () => { const p = defaultPosition(); vp = p; S.x = p.x; S.y = p.y; saveSettings(); place(false); } },
+    { label: 'Вернуть в центр экрана', click: () => centerOn(pillDisplay(vp.x, vp.y)) }, // на том мониторе, где остров висит сейчас
+    ...(screen.getAllDisplays().length > 1 ? [{ label: 'Центр на мониторе', submenu: screen.getAllDisplays().map((d, i) => ({
+      label: `Монитор ${i + 1}: ${d.bounds.width}×${d.bounds.height}${d.id === screen.getPrimaryDisplay().id ? ' (основной)' : ''}`,
+      click: () => centerOn(screen.getAllDisplays().find((x) => x.id === d.id) || screen.getPrimaryDisplay()),
+    })) }] : []),
     { type: 'separator' },
     ...providers.map((p) => ({ label: `Выйти из ${p.name}`, click: () => { p.handlers.logout(); send(`logout:${p.id}`); } })),
     { label: 'Spotify: скопировать диагностику', click: () => clipboard.writeText(JSON.stringify(providers.find((p) => p.id === 'sp').handlers.diag(), null, 2)) },

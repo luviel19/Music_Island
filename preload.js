@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 // Окну острова доступны только перечисленные каналы (список повторяет security.js: в песочнице preload не может подключать файлы).
-const INVOKE = /^(settings:(get|set)|update:(get|open)|open:external|(ym|sc|yt|sp|zv|media):[A-Za-z]{1,32})$/;
+const INVOKE = /^(settings:(get|set)|update:(get|open)|open:external|lyrics:get|(ym|sc|yt|sp|zv|media):[A-Za-z]{1,32})$/;
 const SEND = new Set(['win:ignore', 'win:focusable', 'win:box', 'win:drag-start', 'win:drag-move', 'win:drag-end']);
 const RECEIVE = new Set(['update', 'settings', 'cmd', 'shift']);
 

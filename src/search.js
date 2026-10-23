@@ -7,8 +7,10 @@ const Search = (() => {
   let res = new Map(); // id площадки -> { state: 'load' | 'ok' | 'auth' | 'err', tracks }
   let lastQuery = '';
   let only = null; // выбранная площадка-фильтр (null — все)
+  let kind = 'tracks'; // что ищем: песни или альбомы
+  const kindBox = $('#skind');
 
-  const sources = () => Providers.list.filter((p) => p.search);
+  const sources = () => Providers.list.filter((p) => (kind === 'albums' ? p.searchAlbums : p.search));
 
   // ── сопоставление одной песни на разных площадках ──
   // пояснения в скобках отбрасываем, но версии (remix, live…) оставляем: это другая запись
@@ -63,7 +65,7 @@ const Search = (() => {
     for (const p of sources()) {
       const r = res.get(p.id) || { state: 'load' };
       const el = document.createElement('button');
-      const n = r.tracks?.length || 0;
+      const n = r.tracks?.length || 0; // для альбомов — тоже список (альбомов)
       el.className = `sp ${r.state === 'ok' && !n ? 'off' : r.state === 'auth' ? 'need' : r.state}${only === p.id ? ' sel' : ''}${r.state === 'ok' && n ? ' pick' : ''}`;
       el.innerHTML = `<svg><use href="#${p.icon}"/></svg><span></span>`;
       const label = r.state === 'load' ? '…' : r.state === 'auth' ? 'нужен вход' : r.state === 'err' ? 'ошибка' : String(n);
@@ -83,9 +85,10 @@ const Search = (() => {
     if (!lastQuery) {
       const names = sources().map((p) => p.name).join(', ');
       list.innerHTML = '<div class="empty"></div>';
-      list.firstChild.textContent = `Ищем сразу в: ${names}`;
+      list.firstChild.textContent = `${kind === 'albums' ? 'Ищем альбомы в' : 'Ищем сразу в'}: ${names}`;
       return;
     }
+    if (kind === 'albums') { renderAlbums(); return; }
     if (only && !res.get(only)?.tracks?.length) only = null;
     const groups = group().filter((g) => !only || g.items[only]);
     const loading = sources().some((p) => (res.get(p.id)?.state || 'load') === 'load');
@@ -121,6 +124,56 @@ const Search = (() => {
     }
   }
 
+  // ── альбомы ──
+  function renderAlbums() {
+    // у Spotify своего списка нет (встроенный веб-плеер): открываем официальную страницу альбомов в панели
+    if (P.searchWebAlbums) {
+      const row = document.createElement('div');
+      row.className = 'srow';
+      const ic = document.createElement('div'); ic.className = 'sp-ico'; ic.innerHTML = `<svg><use href="#${P.icon}"/></svg>`;
+      const meta = document.createElement('div'); meta.className = 'q-meta';
+      const a = document.createElement('div'); a.className = 'q-t'; a.textContent = `Альбомы Spotify: «${lastQuery}»`;
+      const b = document.createElement('div'); b.className = 'q-a'; b.textContent = 'Открыть на странице Spotify в панели';
+      meta.append(a, b);
+      row.append(ic, meta);
+      row.onclick = () => P.searchWebAlbums(lastQuery).catch((e) => e.message !== 'auth' && host.flash(e.message));
+      list.append(row);
+    }
+    const items = [];
+    for (const p of sources()) (res.get(p.id)?.tracks || []).forEach((al) => items.push({ p, al }));
+    if (only) items.splice(0, items.length, ...items.filter((x) => x.p.id === only));
+    const loading = sources().some((p) => (res.get(p.id)?.state || 'load') === 'load');
+    if (!items.length) {
+      if (P.searchWebAlbums) return;
+      list.innerHTML = '<div class="empty"></div>';
+      list.firstChild.textContent = loading ? 'Ищем…' : 'Альбомы не найдены';
+      return;
+    }
+    for (const { p, al } of items) {
+      const row = document.createElement('div');
+      row.className = 'srow';
+      const img = document.createElement('img'); if (al.cover) img.src = al.cover;
+      const meta = document.createElement('div'); meta.className = 'q-meta';
+      const a = document.createElement('div'); a.className = 'q-t'; a.textContent = al.title;
+      const b = document.createElement('div'); b.className = 'q-a'; b.textContent = [al.artists, al.year].filter(Boolean).join(' · ');
+      meta.append(a, b);
+      const d = document.createElement('div'); d.className = 'q-d'; d.textContent = al.trackCount ? `${al.trackCount} тр.` : '';
+      const pcs = document.createElement('div'); pcs.className = 'pcs';
+      const c = document.createElement('div'); c.className = 'pc'; c.innerHTML = `<svg><use href="#${p.icon}"/></svg>`;
+      pcs.append(c);
+      row.append(img, meta, d, pcs);
+      row.onclick = () => playAlbum(p, al);
+      list.append(row);
+    }
+  }
+  async function playAlbum(p, al) {
+    try {
+      const tracks = await p.albumTracks(host, al);
+      if (!tracks?.length) { host.flash('В альбоме нет доступных треков'); return; }
+      playResult(p.id, tracks[0], tracks);
+    } catch (e) { if (e.message !== 'auth') host.flash(e.message); }
+  }
+
   function render() { renderStat(); renderList(); }
 
   function play(pid, track) {
@@ -138,7 +191,7 @@ const Search = (() => {
     if (!lastQuery) { render(); return; }
     for (const p of sources()) {
       res.set(p.id, { state: 'load', tracks: null });
-      Promise.resolve().then(() => p.search(host, lastQuery)).then(
+      Promise.resolve().then(() => (kind === 'albums' ? p.searchAlbums(host, lastQuery) : p.search(host, lastQuery))).then(
         (tracks) => { if (my === seq) { res.set(p.id, { state: 'ok', tracks: tracks || [] }); render(); } },
         (e) => { if (my === seq) { res.set(p.id, { state: e.message === 'auth' ? 'auth' : 'err', tracks: null }); render(); } },
       );
@@ -152,8 +205,17 @@ const Search = (() => {
     timer = setTimeout(() => run(input.value), 380);
   });
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { clearTimeout(timer); run(input.value); P.searchWeb?.(input.value); } // Spotify: результаты на его странице в панели
+    if (e.key === 'Enter') { clearTimeout(timer); run(input.value); if (kind === 'tracks') P.searchWeb?.(input.value); } // Spotify: результаты на его странице в панели (альбомы — по клику на строку)
     else if (e.key === 'Escape') { e.preventDefault(); setSub('expanded'); }
+  });
+  kindBox.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-kind]');
+    if (!b || b.dataset.kind === kind) return;
+    kind = b.dataset.kind; only = null;
+    kindBox.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+    input.placeholder = kind === 'albums' ? 'Название альбома или исполнитель' : 'Название песни или исполнитель';
+    run(input.value);
+    input.focus();
   });
   $('#sclear').onclick = () => { input.value = ''; box.classList.remove('has'); run(''); input.focus(); };
   input.addEventListener('focus', () => { S.busy = true; });

@@ -22,11 +22,13 @@ Providers.register((() => {
     }
     idle = false;
     const k = `${st.app}|${st.title}|${st.artist}`;
-    if (k !== key || st.cover !== lastCover) {
-      key = k; lastCover = st.cover;
+    const cover = st.cover || st.appIcon || ''; // нет обложки — значок приложения
+    const sig = `${cover.length}|${st.appName}`;
+    if (k !== key || sig !== lastCover) {
+      key = k; lastCover = sig;
       host.setTrack({
-        id: k, title: st.title, artists: st.artist || st.app, album: st.album || '', year: '', genre: '',
-        app: st.app, cover: st.cover || null, durationMs: st.durMs || 0,
+        id: k, title: st.title, artists: st.artist || st.appName || st.app, album: st.album || '', year: '', genre: '',
+        app: st.appName || st.app, cover: cover || null, durationMs: st.durMs || 0,
       }, '');
     }
     if (Date.now() > hold) host.setPlaying(!!st.playing);

@@ -15,11 +15,11 @@ The installer is **not code-signed**, so Windows SmartScreen may warn about an u
 2. Compare the SHA-256 of the file with the value in the release notes:
 
    ```powershell
-   Get-FileHash .\Music-Island-Setup-0.2.12.exe -Algorithm SHA256
+   Get-FileHash .\Music-Island-Setup-0.2.13.exe -Algorithm SHA256
    ```
 
-   SHA-256 of `Music-Island-Setup-0.2.12.exe`:
-   `08ae16ed05f5642c21535de8d221949513668cbca758f84c9cd807cd379c2925`
+   SHA-256 of `Music-Island-Setup-0.2.13.exe`:
+   `da3a89117216d05e753631177f9568b5f85b5aa56591ff52e523350f314d2acb`
 3. Then choose **More info → Run anyway**. Do not disable Windows Defender or SmartScreen.
 4. You can also build the app yourself from the source (see README).
 
@@ -29,7 +29,7 @@ The installer is **not code-signed**, so Windows SmartScreen may warn about an u
 |---|---|---|
 | Yandex Music token, SoundCloud token, VPN link | `%APPDATA%\Music Island\settings.json` | Always encrypted with Windows (Electron `safeStorage`). If Windows secure storage is unavailable, secrets are not saved at all (never as plain text). Plain-text values written by older versions are encrypted on first start |
 | Spotify session | `%APPDATA%\Music Island\spotify-profile` (WebView2 profile) | Sign-in happens on the real Spotify page; the app only checks that the sign-in cookie exists and never reads or transmits its value |
-| Network | Directly to the services you use (Spotify, Yandex Music, YouTube, SoundCloud) and to `api.github.com` for the update check | No telemetry, no servers of our own. Only SoundCloud and YouTube go through VPN/proxy if you enable it |
+| Network | Directly to the services you use (Spotify, Yandex Music, YouTube, SoundCloud) to `api.github.com` for the update check and to `lrclib.net` for the Karaoke lyrics (only title, artist, album and duration of the current track are sent, and only when you open Karaoke) | No telemetry, no servers of our own. Only SoundCloud and YouTube go through VPN/proxy if you enable it |
 
 ## Design notes / Устройство
 

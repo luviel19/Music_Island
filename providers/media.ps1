@@ -27,19 +27,66 @@ function Emit($o) {
 $mgr = Await ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])
 if (-not $mgr) { Emit @{ active = $false; error = 'no-manager' } }
 
+Add-Type -AssemblyName System.Drawing
+
+# Some players (the new Windows Media Player) return a stream that PowerShell cannot cast or measure.
+# The .NET reflection call below reads it anyway. Big or BMP covers are shrunk to a small JPEG.
+function Read-Stream($stream) {
+    try {
+        $size = [uint32]$stream.Size
+        if ($size -gt 0 -and $size -le 8000000) {
+            $reader = [Windows.Storage.Streams.DataReader]::new($stream)
+            [void](Await ($reader.LoadAsync($size)) ([uint32]))
+            $bytes = New-Object byte[] $size
+            $reader.ReadBytes($bytes)
+            $reader.Dispose()
+            return $bytes
+        }
+    } catch { }
+    try {
+        $m = [System.IO.WindowsRuntimeStreamExtensions].GetMethod('AsStreamForRead', [Type[]]@([Windows.Storage.Streams.IInputStream]))
+        $in = $m.Invoke($null, @($stream))
+        $ms = New-Object System.IO.MemoryStream
+        $in.CopyTo($ms)
+        if ($ms.Length -gt 0 -and $ms.Length -le 30000000) { return $ms.ToArray() }
+    } catch { }
+    return $null
+}
+
+function Shrink-Image($bytes) {
+    $ms = New-Object System.IO.MemoryStream (, $bytes)
+    $img = [System.Drawing.Image]::FromStream($ms)
+    $k = [math]::Min(1.0, 500.0 / [math]::Max($img.Width, $img.Height))
+    $w = [int][math]::Max(1, [math]::Round($img.Width * $k)); $h = [int][math]::Max(1, [math]::Round($img.Height * $k))
+    $bmp = New-Object System.Drawing.Bitmap $w, $h
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $g.DrawImage($img, 0, 0, $w, $h)
+    $g.Dispose(); $img.Dispose()
+    $codec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' } | Select-Object -First 1
+    $ep = New-Object System.Drawing.Imaging.EncoderParameters 1
+    $ep.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter ([System.Drawing.Imaging.Encoder]::Quality), ([long]85)
+    $out = New-Object System.IO.MemoryStream
+    $bmp.Save($out, $codec, $ep)
+    $bmp.Dispose()
+    return $out.ToArray()
+}
+
 function Get-Thumb($props) {
     try {
         if (-not $props.Thumbnail) { return '' }
         $stream = Await ($props.Thumbnail.OpenReadAsync()) ([Windows.Storage.Streams.IRandomAccessStreamWithContentType])
         if (-not $stream) { return '' }
-        $size = [uint32]$stream.Size
-        if ($size -eq 0 -or $size -gt 8000000) { return '' }
-        $mime = $stream.ContentType
-        $reader = [Windows.Storage.Streams.DataReader]::new($stream)
-        [void](Await ($reader.LoadAsync($size)) ([uint32]))
-        $bytes = New-Object byte[] $size
-        $reader.ReadBytes($bytes)
-        $reader.Dispose(); $stream.Dispose()
+        $bytes = Read-Stream $stream
+        if (-not $bytes -or $bytes.Length -lt 16) { return '' }
+        $mime = 'image/jpeg'
+        if ($bytes[0] -eq 0x89 -and $bytes[1] -eq 0x50) { $mime = 'image/png' }
+        elseif ($bytes[0] -eq 0x47 -and $bytes[1] -eq 0x49) { $mime = 'image/gif' }
+        elseif ($bytes[0] -eq 0x52 -and $bytes[1] -eq 0x49) { $mime = 'image/webp' }
+        elseif ($bytes[0] -eq 0x42 -and $bytes[1] -eq 0x4D) { $mime = 'image/bmp' }
+        if ($mime -eq 'image/bmp' -or $bytes.Length -gt 700000) {
+            try { $bytes = Shrink-Image $bytes; $mime = 'image/jpeg' } catch { if ($mime -eq 'image/bmp') { return '' } }
+        }
         return 'data:' + $mime + ';base64,' + [Convert]::ToBase64String($bytes)
     } catch { return '' }
 }
@@ -117,12 +164,15 @@ function Get-State {
     if ($key -ne $script:lastKey) {
         $script:lastKey = $key
         $o.thumb = Get-Thumb $props
+        $script:lastThumb = $o.thumb
         $script:needThumb = ($o.thumb -eq '')
         $script:thumbTries = 0
-    } elseif ($script:needThumb -and $script:thumbTries -lt 8) {
+    } elseif ($script:thumbTries -lt 40 -and ($script:needThumb -or $script:thumbTries -lt 10)) {
+        # Spotify и др. отдают обложку с задержкой, а сразу после смены трека могут показывать обложку прошлого:
+        # пустую повторяем до ~30 с, найденную перепроверяем первые секунды и обновляем, если она изменилась
         $script:thumbTries++
         $t = Get-Thumb $props
-        if ($t -ne '') { $o.thumb = $t; $script:needThumb = $false }
+        if ($t -ne '' -and $t -ne $script:lastThumb) { $o.thumb = $t; $script:lastThumb = $t; $script:needThumb = $false }
     }
     return $o
 }

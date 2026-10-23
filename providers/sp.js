@@ -202,10 +202,10 @@ module.exports = function createSpotify(ctx) {
       return handlers.show();
     },
     // поиск: официальная страница поиска Spotify в панели (своего списка результатов у встроенного плеера нет)
-    search: ({ q }) => {
+    search: ({ q, kind }) => {
       const t = String(q || '').trim().slice(0, 100);
       if (!t) return false;
-      send({ cmd: 'nav', url: 'https://open.spotify.com/search/' + encodeURIComponent(t) });
+      send({ cmd: 'nav', url: 'https://open.spotify.com/search/' + encodeURIComponent(t) + (kind === 'albums' ? '/albums' : '') });
       return handlers.show();
     },
     home: () => { send({ cmd: 'home' }); return true; },
