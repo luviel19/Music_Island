@@ -100,6 +100,7 @@ svg { width: 20px; height: 20px; display: block; }
 }
 .meta { flex: 1; min-width: 0; }
 .title { font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#playbackStatus { color: rgb(var(--accent)); }
 .artist { margin-top: 2px; color: var(--dim); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .like { width: 38px; height: 38px; color: #fff; }
 .like svg { width: 24px; height: 24px; fill: none; }

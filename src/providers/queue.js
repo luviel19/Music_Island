@@ -63,7 +63,7 @@ window.youtubeEngine = () => {
       frame = document.createElement('iframe');
       frame.allow = 'autoplay; encrypted-media';
       frame.style.cssText = 'position:fixed;left:-400px;top:0;width:200px;height:200px;border:0;pointer-events:none';
-      frame.src = `http://localhost:${port}/yt.html`;
+      frame.src = typeof port === 'string' ? port : `http://localhost:${port}/yt.html`; // строка — готовый адрес (Android-версия)
       document.body.append(frame);
     },
     async load(track) { send({ c: 'load', id: track.id }); },

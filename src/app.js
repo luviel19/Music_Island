@@ -10,7 +10,7 @@ const S = {
   open: false, sub: 'expanded', over: false, dragging: false, busy: false, volHold: 0,
 };
 const T = {
-  track: null, status: '', playing: false, liked: false, shuffle: false,
+  track: null, status: '', playbackStatus: null, playing: false, liked: false, shuffle: false,
   pos: 0, dur: 0, at: 0, volume: 0.7,
   queue: [], qCur: -1, authNeeded: false,
 };
@@ -53,6 +53,15 @@ const host = {
   setPlaying(b) {
     if (b === T.playing) return;
     T.pos = posNow(); T.at = performance.now(); T.playing = b;
+    renderPlay();
+  },
+  setPlaybackStatus(status) {
+    T.playbackStatus = status;
+    const messages = { resume: 'Продолжить с сохранённой позиции', retrying: 'Восстанавливаем воспроизведение…', offline: 'Ожидаем восстановления сети' };
+    $('#artist').hidden = !!status;
+    const line = $('#playbackStatus');
+    line.hidden = !status;
+    line.textContent = messages[status] || '';
     renderPlay();
   },
   setProgress(pos, dur) {
@@ -219,7 +228,11 @@ function renderTrack() {
 function renderLike() { $('#like').classList.toggle('liked', !!T.track && T.liked); }
 function renderPlay() {
   island.classList.toggle('playing', T.playing);
-  $('#playIcon').setAttribute('href', T.playing ? '#i-pause' : '#i-play');
+  const waiting = T.playbackStatus === 'retrying' || T.playbackStatus === 'offline';
+  island.classList.toggle('waiting-for-audio', waiting);
+  const pause = T.playing || waiting;
+  $('#playIcon').setAttribute('href', pause ? '#i-pause' : '#i-play');
+  $('#play').setAttribute('aria-label', waiting ? 'Отменить автовозобновление' : pause ? 'Пауза' : T.playbackStatus === 'resume' ? 'Продолжить трек' : 'Воспроизвести');
 }
 function tick() {
   if (!T.track) return;

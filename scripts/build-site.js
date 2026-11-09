@@ -155,7 +155,7 @@ function page(l) {
 <html lang="${t.lang}">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+${l === 'en' ? '<meta name="yandex-verification" content="675cafb80569a0b0" />\n' : ''}<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(t.title)}</title>
 <meta name="description" content="${esc(t.desc)}">
 <link rel="canonical" href="${t.url}">
