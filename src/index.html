@@ -14,6 +14,7 @@
     <symbol id="i-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M7.5 5h-1A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19h1A1.5 1.5 0 0 0 9 17.5v-11A1.5 1.5 0 0 0 7.5 5zm10 0h-1A1.5 1.5 0 0 0 15 6.5v11a1.5 1.5 0 0 0 1.5 1.5h1a1.5 1.5 0 0 0 1.5-1.5v-11A1.5 1.5 0 0 0 17.5 5z"/></symbol>
     <symbol id="i-next" viewBox="0 0 24 24"><path fill="currentColor" d="M5 6.2v11.6a1 1 0 0 0 1.55.83l8.2-5.8a1 1 0 0 0 0-1.66l-8.2-5.8A1 1 0 0 0 5 6.2zM17 5.5v13a1 1 0 0 0 2 0v-13a1 1 0 0 0-2 0z"/></symbol>
     <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.5 8 3.4 4.8 6.8 4.8c2 0 3.5 1 5.2 3 1.7-2 3.2-3 5.2-3 3.4 0 5.3 3.2 4.1 6.5-1.8 4.6-9.3 9.2-9.3 9.2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-dislike" viewBox="0 0 24 24"><path d="M10 15.5H5.8a1.6 1.6 0 0 1-1.6-1.9l1-6.2A2 2 0 0 1 7.2 5.7h8.3v9.1L12.4 20a1.6 1.6 0 0 1-2.4-1.4V15.5zM15.5 5.7H19a1 1 0 0 1 1 1v6.6a1 1 0 0 1-1 1h-3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-wave" viewBox="0 0 24 24"><path d="M2 12c1.5-6 3-6 4.5 0s3 6 4.5 0 3-6 4.5 0 3 6 4.5 0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
     <symbol id="i-mic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></g></symbol>
     <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
@@ -67,6 +68,7 @@
           <div class="artist" id="playbackStatus" role="status" hidden></div>
         </div>
         <button class="ib klr" id="toLyrics" data-tip="Караоке"><svg><use href="#i-mic"/></svg></button>
+        <button class="ib like" id="dislike" data-tip="Не нравится" style="display:none"><svg><use href="#i-dislike"/></svg></button>
         <button class="ib like" id="like" data-tip="Нравится"><svg><use href="#i-heart"/></svg></button>
       </div>
       <div class="progress">
@@ -169,6 +171,8 @@
           <div class="artist" id="dArtist"></div>
           <dl id="dList"></dl>
           <div class="d-actions">
+            <button class="chip" id="dWave" style="display:none"><svg><use href="#i-wave"/></svg>Волна по песне</button>
+            <button class="chip sm" id="dXf" style="display:none"></button>
             <button class="chip" id="dOpen"><svg><use href="#i-ext"/></svg>Открыть в Яндекс Музыке</button>
           </div>
         </div>

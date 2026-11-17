@@ -47,6 +47,7 @@ const host = {
     const changed = track?.id !== T.track?.id;
     T.track = track; T.status = status;
     if (changed) { T.pos = 0; T.at = performance.now(); T.dur = track?.durationMs || 0; T.liked = false; }
+    if (changed) renderControls();
     setWaveFor(track);
     renderTrack(); renderDetails();
   },
@@ -74,7 +75,8 @@ const host = {
     T.volume = v; renderVol();
   },
   setLiked(b) { T.liked = b; renderLike(); },
-  setShuffle(b) { T.shuffle = b; renderControls(); },
+  setShuffle(b, smart = false) { T.shuffle = b; T.smartShuffle = !!(b && smart); renderControls(); },
+  setShuffleAvail(b) { T.shuffleAvail = !!b; renderControls(); }, // перемешивание доступно и для списка из поиска
   setQueue(items, cur = -1) { T.queue = items; T.qCur = cur; if (S.sub === 'queue') renderQueue(false); },
   flash(msg) { flash(msg); },
   setMode(id) { S.mode = id; call('settings:set', { mode: id }); renderControls(); },
@@ -485,8 +487,11 @@ function renderControls() {
   seg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.mode === S.mode));
   $('#pin').classList.toggle('on', S.settings.alwaysOnTop);
   const sh = P.caps.shuffle;
-  $('#shuffle').style.display = sh === true || (sh === 'fav' && S.mode === 'fav') ? '' : 'none';
+  $('#shuffle').style.display = sh === true || (sh === 'fav' && S.mode === 'fav') || (sh && T.shuffleAvail) ? '' : 'none';
+  $('#dislike').style.display = P.dislike && S.mode === 'wave' && T.track ? '' : 'none';
   $('#shuffle').classList.toggle('on', T.shuffle);
+  $('#shuffle').classList.toggle('smart', !!T.smartShuffle);
+  $('#shuffle').dataset.tip = T.smartShuffle ? 'Умное перемешивание: свои и похожие' : S.mode === 'fav' ? 'Перемешать избранное' : 'Перемешать список';
   const cp = P.caps;
   $('#like').style.display = cp.like === false ? 'none' : '';
   $('#toQueue').style.display = cp.queue === false ? 'none' : '';
@@ -503,6 +508,8 @@ function renderControls() {
 function renderDetails() {
   const t = T.track; if (!t) return;
   $('#dOpen').style.display = P.trackUrl(t) ? '' : 'none';
+  $('#dWave').style.display = P.trackWave && !T.authNeeded ? '' : 'none';
+  renderXf();
   setCover($('#dCover'), t.cover);
   $('#dTitle').textContent = t.title;
   $('#dArtist').textContent = t.artists;
@@ -600,6 +607,26 @@ function closeMenu() {
 $('#src').onclick = () => (S.menuOpen ? closeMenu() : openMenu());
 document.addEventListener('pointerdown', (e) => { if (S.menuOpen && !e.target.closest('#menu, #src')) closeMenu(); });
 document.querySelectorAll('[data-back]').forEach((b) => (b.onclick = () => setSub('expanded')));
+function renderXf() {
+  const x = P.crossfade;
+  $('#dXf').style.display = x ? '' : 'none';
+  if (x) $('#dXf').textContent = x.get() ? `Кроссфейд: ${x.get()} с` : 'Кроссфейд: выкл';
+}
+$('#dXf').onclick = () => {
+  const x = P.crossfade; if (!x) return;
+  x.set(x.values[(x.values.indexOf(x.get()) + 1) % x.values.length]);
+  renderXf();
+};
+$('#dislike').onclick = guard(() => P.dislike?.());
+// «Волна по песне» из результатов поиска (долгое нажатие на строку): переходим на Яндекс Музыку и запускаем волну
+async function waveFromSearch(track) {
+  setSub('expanded');
+  switchTo('ym');
+  T.authNeeded = false;
+  S.mode = 'wave'; renderControls();
+  try { await P.trackWave(track, host); } catch (e) { if (e.message !== 'auth') flash(e.message); }
+}
+$('#dWave').onclick = () => { if (T.track && P.trackWave) { guard(() => P.trackWave(T.track))(); setSub('expanded'); } };
 $('#dOpen').onclick = () => { const u = T.track && P.trackUrl(T.track); if (u) call('open:external', u); };
 
 function setMode(mode) {
@@ -910,7 +937,7 @@ function switchTo(id) {
   P = next; S.source = id;
   call('settings:set', { source: id });
   if (!P.modes.some((m) => m.id === S.mode)) S.mode = P.modes[0]?.id ?? '';
-  T.authNeeded = false; T.playing = false; T.shuffle = false;
+  T.authNeeded = false; T.playing = false; T.shuffle = false; T.smartShuffle = false; T.shuffleAvail = false;
   host.setTrack(null, '');
   renderPlay(); renderControls(); renderVol(); applyState();
   return true;

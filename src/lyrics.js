@@ -76,7 +76,7 @@ const Lyrics = (() => {
     const id = T.track ? String(T.track.id) : '';
     if (id !== key) { load(); return; }
     if (!data?.synced) return;
-    const pos = posNow() + 200; // мс; подсвечиваем чуть заранее
+    const pos = P?.positionMs?.() ?? (posNow() + 200);
     let i = -1;
     for (let k = 0; k < data.lines.length; k++) { if (data.lines[k].t <= pos) i = k; else break; }
     if (i === cur) return;

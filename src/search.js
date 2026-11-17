@@ -80,12 +80,31 @@ const Search = (() => {
     }
   }
 
+  // долгое нажатие на строку (или правая кнопка мыши) — «Волна по песне» от Яндекс Музыки
+  function longPress(row, fn) {
+    let t = null, x = 0, y = 0;
+    const stop = () => { clearTimeout(t); t = null; };
+    row.addEventListener('pointerdown', (e) => {
+      if (e.button) return;
+      x = e.clientX; y = e.clientY; row.__long = false;
+      t = setTimeout(() => { t = null; row.__long = true; navigator.vibrate?.(25); fn(); }, 550);
+    });
+    row.addEventListener('pointermove', (e) => { if (t && Math.hypot(e.clientX - x, e.clientY - y) > 8) stop(); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((n) => row.addEventListener(n, stop));
+    row.addEventListener('contextmenu', (e) => { e.preventDefault(); stop(); if (!row.__long) { row.__long = true; fn(); } });
+  }
+
   function renderList() {
     list.replaceChildren();
     if (!lastQuery) {
       const names = sources().map((p) => p.name).join(', ');
       list.innerHTML = '<div class="empty"></div>';
       list.firstChild.textContent = `${kind === 'albums' ? 'Ищем альбомы в' : 'Ищем сразу в'}: ${names}`;
+      if (kind !== 'albums' && Providers.get('ym')?.trackWave) {
+        const h = document.createElement('div'); h.className = 'q-a'; h.style.cssText = 'margin-top:8px;font-size:12px;color:var(--dim)';
+        h.textContent = 'Долгое нажатие на песню запускает волну в её стиле';
+        list.firstChild.append(h);
+      }
       return;
     }
     if (kind === 'albums') { renderAlbums(); return; }
@@ -119,7 +138,11 @@ const Search = (() => {
       }
       row.append(img, meta, d, pcs);
       // клик по строке: там, где сейчас играет (если песня есть), иначе на первой найденной площадке
-      row.onclick = () => play(present.includes(P.id) ? P.id : present[0], g.items[present.includes(P.id) ? P.id : present[0]].t);
+      row.onclick = () => {
+        if (row.__long) { row.__long = false; return; }
+        play(present.includes(P.id) ? P.id : present[0], g.items[present.includes(P.id) ? P.id : present[0]].t);
+      };
+      if (g.items.ym && Providers.get('ym')?.trackWave) longPress(row, () => waveFromSearch(g.items.ym.t));
       list.append(row);
     }
   }

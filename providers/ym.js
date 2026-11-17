@@ -189,9 +189,10 @@ module.exports = function createYandex(ctx) {
       return groups.concat(FALLBACK_GROUPS.filter((g) => !known.has(g.id)));
     },
     // волна с настройками: сессия по сидам; первая партия приходит сразу
-    tunedWave: async ({ value, queue }) => {
+    tunedWave: async ({ value, queue, seeds }) => {
       let r;
-      try { r = await sessionNew(seedsOf(value), queue); } catch (e) {
+      if (Array.isArray(seeds) && seeds.length) r = await sessionNew(seeds.map(String), queue); // волна по сидам (например, по песне)
+      else try { r = await sessionNew(seedsOf(value), queue); } catch (e) {
         if (e.message === 'auth' || !value?.activity) throw e;
         r = await sessionNew(seedsOf({ ...value, activity: '' }), queue); // сид занятия не принят — без него
       }
@@ -249,6 +250,13 @@ module.exports = function createYandex(ctx) {
     url: (id) => directUrl(id),
     like: async ({ id, like }) => {
       await api(`/users/${await getUid()}/likes/tracks/${like ? 'add-multiple' : 'remove'}`, {
+        method: 'POST', form: { 'track-ids': id },
+      });
+      return true;
+    },
+    // «Не нравится»: трек больше не попадёт в рекомендации
+    dislike: async ({ id, on }) => {
+      await api(`/users/${await getUid()}/dislikes/tracks/${on === false ? 'remove' : 'add-multiple'}`, {
         method: 'POST', form: { 'track-ids': id },
       });
       return true;
