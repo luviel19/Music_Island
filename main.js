@@ -90,6 +90,7 @@ const ctx = {
   provider: (id) => providers.find((p) => p.id === id),
 };
 const providers = require('./providers')(ctx);
+const lastfm = require('./lastfm')(ctx);
 const updater = require('./updater')((info) => { win?.webContents.send('update', info); tray?.setContextMenu(buildMenu()); });
 // прокси только для SoundCloud и YouTube: остальные площадки ходят напрямую
 const SC_HOSTS = String.raw`(^|\.)(soundcloud\.com|sndcdn\.com|soundcloud\.cloud|youtube\.com|youtu\.be|youtube-nocookie\.com|googlevideo\.com|ytimg\.com|ggpht\.com|gstatic\.com|googleapis\.com|google\.com|recaptcha\.net|facebook\.com|fbcdn\.net|apple\.com|datadome\.co|captcha-delivery\.com|hcaptcha\.com|cloudflare\.com)$`;
@@ -229,6 +230,13 @@ handle('lyrics:get', async (track) => {
   return res;
 });
 
+for (const [name, fn] of Object.entries(lastfm.handlers)) {
+  handle(`lastfm:${name}`, async (...a) => {
+    const r = await fn(...a);
+    if (name === 'login' || name === 'logout') tray?.setContextMenu(buildMenu());
+    return r;
+  });
+}
 handle('settings:get', () => publicSettings());
 handle('settings:set', (patch) => {
   patch = security.sanitizePatch(patch, providers.map((p) => p.id)); // неизвестные ключи и неверные значения отбрасываются
@@ -243,7 +251,7 @@ handle('update:get', () => updater.latest);
 handle('update:open', () => { if (updater.latest) shell.openExternal(updater.latest.url); });
 handle('open:external', (url) => {
   const u = new URL(url);
-  if (u.protocol === 'https:' && providers.some((p) => (p.hosts || []).includes(u.hostname))) shell.openExternal(url);
+  if (u.protocol === 'https:' && (providers.some((p) => (p.hosts || []).includes(u.hostname)) || u.hostname === 'www.last.fm')) shell.openExternal(url);
 });
 
 // окно: прозрачные области пропускают клики, остров перетаскивается вручную
@@ -395,6 +403,7 @@ function buildMenu() {
       } },
       { label: 'Забыть сохранённую ссылку', enabled: !!customTarget(), click: () => { S.proxyCustom = null; S.proxy = ''; S.proxyLast = null; setProxyMode(proxyMode() === 'builtin' ? 'builtin' : 'off'); } },
     ] },
+    { label: lastfm.user() ? `Last.fm: ${lastfm.user()}` : 'Last.fm: подключить…', click: () => { win.showInactive(); win.moveTop(); send('lastfm'); } },
     { label: 'Вернуть в центр экрана', click: () => centerOn(pillDisplay(vp.x, vp.y)) }, // на том мониторе, где остров висит сейчас
     ...(screen.getAllDisplays().length > 1 ? [{ label: 'Центр на мониторе', submenu: screen.getAllDisplays().map((d, i) => ({
       label: `Монитор ${i + 1}: ${d.bounds.width}×${d.bounds.height}${d.id === screen.getPrimaryDisplay().id ? ' (основной)' : ''}`,

@@ -50,11 +50,13 @@ const host = {
     if (changed) renderControls();
     setWaveFor(track);
     renderTrack(); renderDetails();
+    lfmFeed();
   },
   setPlaying(b) {
     if (b === T.playing) return;
     T.pos = posNow(); T.at = performance.now(); T.playing = b;
     renderPlay();
+    lfmFeed();
   },
   setPlaybackStatus(status) {
     T.playbackStatus = status;
@@ -67,7 +69,7 @@ const host = {
   },
   setProgress(pos, dur) {
     T.pos = pos; T.at = performance.now();
-    if (dur) { T.dur = dur; $('#tDur').textContent = fmt(dur / 1000); }
+    if (dur) { const was = T.dur; T.dur = dur; $('#tDur').textContent = fmt(dur / 1000); if (Math.abs(dur - was) > 1500) lfmFeed(); }
     tick();
   },
   setVolume(v) {
@@ -93,6 +95,7 @@ const host = {
 function applyState() {
   island.dataset.state = !S.open ? 'compact' : T.authNeeded ? 'auth' : S.sub;
   if (typeof Search !== 'undefined') Search.sync(island.dataset.state === 'search');
+  if (typeof LastFm !== 'undefined') LastFm.sync(island.dataset.state === 'lastfm');
   // главному процессу нужен размер острова: свёрнутый можно прижать к самому углу, раскрытый должен целиком поместиться на экране
   const cs = getComputedStyle(island);
   bridge.send('win:box', parseFloat(cs.getPropertyValue('--w')) || 240, parseFloat(cs.getPropertyValue('--h')) || 38);
@@ -107,6 +110,7 @@ function setSub(v) {
   if (v === 'queue') { T.queue = []; renderQueue(true); P.getQueue(); }
   if (v === 'eq') renderEq();
   if (v === 'tune') renderTune();
+  if (v === 'lastfm') LastFm.render();
   applyState();
 }
 
@@ -980,8 +984,62 @@ bridge.on('cmd', (c) => {
   else if (name === 'prev') guard(() => P.prev())();
   else if (name === 'source') setSource(arg);
   else if (name === 'mode') { if (P.modes.some((m) => m.id === arg)) setMode(arg); }
+  else if (name === 'lastfm') { setOpen(true); setSub('lastfm'); }
   else if (name === 'logout' && arg === P.id) { T.authNeeded = false; host.authRequired(); }
 });
+
+// ───────────────────── Last.fm ─────────────────────
+// Что играет и играет ли, уходит в главный процесс: он сам считает, когда песню пора засчитать (если Last.fm подключён)
+let lfmT = null;
+function lfmFeed() {
+  clearTimeout(lfmT);
+  lfmT = setTimeout(() => {
+    const t = T.track;
+    bridge.invoke('lastfm:state', { t: t?.title || '', a: t?.artists || '', d: (T.dur || t?.durationMs || 0) / 1000, p: !!(t && T.playing) }).catch(() => {});
+  }, 400);
+}
+const LastFm = (() => {
+  const box = $('.lfm'), info = $('#lfmInfo'), go = $('#lfmGo');
+  const f = { key: $('#lfmKey'), secret: $('#lfmSecret'), user: $('#lfmUser'), pass: $('#lfmPass') };
+  let user = null, active = false, busy = false;
+  const say = (t) => { info.textContent = t; };
+  function paint() {
+    box.classList.toggle('on', !!user);
+    go.textContent = user ? 'Отключить' : 'Войти';
+    $('#lfmGet').style.display = user ? 'none' : '';
+    say(user ? `Подключено: ${user}. Прослушанные песни отправляются в вашу историю на Last.fm.` : 'Создайте бесплатный ключ API на last.fm/api/account/create и введите его вместе с секретом, логином и паролем (пароль нигде не хранится).');
+  }
+  async function render() {
+    const r = await bridge.invoke('lastfm:status');
+    user = r.ok ? r.data.user : null;
+    paint();
+  }
+  go.onclick = async () => {
+    if (busy) return;
+    busy = true;
+    try {
+      if (user) { await bridge.invoke('lastfm:logout'); user = null; paint(); return; }
+      say('Входим…');
+      const r = await bridge.invoke('lastfm:login', { key: f.key.value, secret: f.secret.value, user: f.user.value, pass: f.pass.value });
+      if (r.ok) { user = r.data.user; f.pass.value = ''; paint(); lfmFeed(); } else say(r.error);
+    } finally { busy = false; }
+  };
+  $('#lfmGet').onclick = () => bridge.invoke('open:external', 'https://www.last.fm/api/account/create');
+  Object.values(f).forEach((i) => {
+    i.addEventListener('focus', () => { S.busy = true; });
+    i.addEventListener('blur', () => { S.busy = false; evalOver(lastMouse.x, lastMouse.y); });
+    i.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); setSub('expanded'); } else if (e.key === 'Enter') go.click(); });
+  });
+  // окну острова нужен фокус, чтобы в поля можно было печатать
+  function sync(on) {
+    if (on === active) return;
+    active = on;
+    bridge.send('win:focusable', on);
+    if (on) setTimeout(() => { if (active && !user) f.key.focus(); }, 120);
+    else Object.values(f).forEach((i) => i.blur());
+  }
+  return { render, sync };
+})();
 
 // ───────────────────── старт ─────────────────────
 (async function init() {

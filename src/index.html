@@ -155,6 +155,24 @@
       <div class="eq-off" id="eqNote"></div>
     </section>
 
+    <!-- Last.fm -->
+    <section class="layer l-lastfm">
+      <header><button class="ib back" data-back><svg><use href="#i-back"/></svg></button><h3>Last.fm</h3></header>
+      <div class="lfm">
+        <p id="lfmInfo"></p>
+        <div id="lfmForm">
+          <input id="lfmKey" type="text" placeholder="Ключ API" spellcheck="false" autocomplete="off" maxlength="64">
+          <input id="lfmSecret" type="text" placeholder="Секрет (Shared secret)" spellcheck="false" autocomplete="off" maxlength="64">
+          <input id="lfmUser" type="text" placeholder="Логин Last.fm" spellcheck="false" autocomplete="off" maxlength="64">
+          <input id="lfmPass" type="password" placeholder="Пароль Last.fm" autocomplete="off" maxlength="200">
+        </div>
+        <div class="lfm-act">
+          <button class="chip big" id="lfmGo"></button>
+          <button class="link" id="lfmGet">Создать ключ API</button>
+        </div>
+      </div>
+    </section>
+
     <!-- настройка волны -->
     <section class="layer l-tune">
       <header><button class="ib back" data-back><svg><use href="#i-back"/></svg></button><h3 id="tuneTitle">Настроить волну</h3></header>
@@ -218,6 +236,7 @@
 <script src="providers/media.js"></script>
 <script src="app.js"></script>
 <script src="search.js"></script>
+<script src="visual.js"></script>
 <script src="lyrics.js"></script>
 </body>
 </html>
