@@ -16,7 +16,7 @@ app.whenReady().then(async () => {
     let html = fs.readFileSync(path.join(src, 'index.html'), 'utf8');
     html = html.replace(/<script src="providers\/(ym|sc|yt|sp|media)\.js"><\/script>\n?/g, '')
       .replace('<script src="app.js">', '<script src="../promo/fake-sp.js"></script>\n<script src="app.js">')
-      .replace('</head>', `<style>html{background:radial-gradient(70% 90% at 12% 0%,rgba(255,77,148,.42),transparent 60%),radial-gradient(60% 80% at 95% 100%,rgba(123,97,255,.5),transparent 60%),linear-gradient(135deg,#0b0b14,#14102a 55%,#240e36)!important}</style></head>`);
+      .replace('</head>', `<style>html{background:radial-gradient(70% 90% at 12% 0%,rgba(255,77,148,.42),transparent 60%),radial-gradient(60% 80% at 95% 100%,rgba(123,97,255,.5),transparent 60%),linear-gradient(135deg,#0b0b14,#14102a 55%,#240e36)!important}#miBg{opacity:.95!important}#miBg::after{background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.32))!important}</style></head>`);
     fs.writeFileSync(tmp, html);
     fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out, { recursive: true });
 
