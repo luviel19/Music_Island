@@ -411,7 +411,8 @@ function buildMenu() {
     })) }] : []),
     { type: 'separator' },
     ...providers.map((p) => ({ label: `Выйти из ${p.name}`, click: () => { p.handlers.logout(); send(`logout:${p.id}`); } })),
-    { label: 'Spotify: скопировать диагностику', click: () => clipboard.writeText(JSON.stringify(providers.find((p) => p.id === 'sp').handlers.diag(), null, 2)) },
+    // пункт есть, только если провайдер Spotify зарегистрирован и умеет отдавать диагностику
+    ...providers.filter((p) => p.id === 'sp' && p.handlers.diag).map((p) => ({ label: 'Spotify: скопировать диагностику', click: () => clipboard.writeText(JSON.stringify(p.handlers.diag(), null, 2)) })),
     { label: 'Закрыть', click: () => app.quit() },
   ]);
 }

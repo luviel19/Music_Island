@@ -1,4 +1,4 @@
-// Общая логика провайдеров с очередью треков (SoundCloud, YouTube, Звук): очередь, переходы,
+// Общая логика провайдеров с очередью треков (SoundCloud, YouTube): очередь, переходы,
 // догрузка, лайки, ошибки. Конкретный сервис задаёт только cfg, воспроизведение — engine.
 //
 // cfg: { id, name, hint, icon, modes, caps, tune?, search?(host, q) -> tracks, related?(host, track) -> tracks,

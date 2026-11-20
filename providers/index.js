@@ -8,7 +8,6 @@ const FACTORIES = [
   require('./sp'),  // Spotify: веб-плеер на WebView2 (native/spotify-host)
   require('./sc'),
   require('./yt'),
-  // require('./zv'),  // Звук: стриминг закрыт антибот-защитой (HTTP 418); код оставлен, включите вместе со скриптом в index.html
   require('./media'),
 ];
 
